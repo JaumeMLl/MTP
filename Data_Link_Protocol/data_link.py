@@ -1,7 +1,33 @@
 import time
 import board
+import os as sys
 from digitalio import DigitalInOut
 from circuitpython_nrf24l01.rf24 import RF24
+
+def readFile():
+    
+    # Get Path 
+    # TO DO: Change path to USB path
+    path = '/home/pi/usb/documento.txt'
+
+    # Open file
+    try:
+        with open(path, 'r') as file:
+            content = file.read()
+            print("File contet:")
+            print(content)
+    except FileNotFoundError:
+        print(f"The file {path} does not exist.")
+    except Exception as e:
+        print(f"There was a mistake while opening the file: {e}")
+    
+    # Fragment file
+    payload_size = 32
+
+    # TO DO: Falta completar el readFile(), fragmentar i retornar un string list, després a l'hora 
+    # d'enviar s'ha de fer un count i un bucle per enviar en aquest ordre.
+    # return list(string[0+i: length+i] for i in range(0, len(string), length))
+
 
 # Initialize nRF24L01 radio
 SPI_BUS, CSN_PIN, CE_PIN = (None, None, None)
@@ -55,6 +81,8 @@ nrf.open_rx_pipe(1, communication_address[not radio_number])  # using pipe 1
 def transmit(buffer):
     """Function to transmit a buffer"""
     nrf.listen = False  # Ensure it's in transmit mode
+    # Read and fragment the file
+    buffer = readFile()
 
     # Attempt to send the buffer --> aixi no perque s'ha de partir
     if nrf.send(buffer):
