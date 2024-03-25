@@ -4,30 +4,67 @@ from digitalio import DigitalInOut
 from circuitpython_nrf24l01.rf24 import RF24
 
 # Initialize nRF24L01 radio
-# Assuming CE_PIN and CSN_PIN are set up externally and SPI_BUS is initialized
-CE_PIN = DigitalInOut(board.D22)  # Example pin, replace with your actual CE pin
-CSN_PIN = DigitalInOut(board.D17)  # Example pin, replace with your actual CSN pin
+SPI_BUS, CSN_PIN, CE_PIN = (None, None, None)
+
+#SPI 
+# Found this on: https://circuitpython-nrf24l01.readthedocs.io/en/latest/examples.html#simple-test
+try:  #on Linux
+    import spidev
+
+    SPI_BUS = spidev.SpiDev()
+    CSN_PIN = DigitalInOut(board.D17)  # Example pin, replace with your actual CSN pin
+    CE_PIN = DigitalInOut(board.D22)  # Example pin, replace with your actual CE pin
+
+except ImportError: #CircuitPython
+    # using board.SPI() automatically selects the MCU's
+    # available SPI pins, board.SCK, board.MOSI, board.MISO
+    SPI_BUS = board.SPI()   #init spi bus object
+
+    # change these (digital output) pins accordingly
+    CE_PIN = DigitalInOut(board.D4)
+    CSN_PIN = DigitalInOut(board.D5)
+
+# initialize the nRF24L01 on the spi bus object
 nrf = RF24(SPI_BUS, CSN_PIN, CE_PIN)
+# On Linux, csn value is a bit coded
+#                 0 = bus 0, CE0  # SPI bus 0 is enabled by default
+#                10 = bus 1, CE0  # enable SPI bus 2 prior to running this
+#                21 = bus 2, CE1  # enable SPI bus 1 prior to running this
 
 # nRF24L01 basic setup
 nrf.pa_level = -18  # Power Amplifier level
 nrf.data_rate = RF24.DATA_RATE_1MBPS  # Data rate
-communication_address = b"1Node"  # Single address for both TX and RX
+#communication_address = b"1Node"  # Single address for both TX and RX
+# addresses needs to be in a buffer protocol object (bytearray)
+communication_address = [b"1Node", b"2Node"] # Adress 0 for transmitter and 1 for receiver. Default is for transmitter
+
+# to use different addresses on a pair of radios, we need a variable to
+# uniquely identify which address this radio will use to transmit
+# 0 uses address[0] to transmit, 1 uses address[1] to transmit
+radio_number = bool(
+    int(input("Which radio is this? Enter '0' or '1'. Defaults to '0' ") or 0)
+)
+
+# set TX address of RX node into the TX pipe
+nrf.open_tx_pipe(communication_address[radio_number])  # always uses pipe 0
+
+# set RX address of TX node into an RX pipe
+nrf.open_rx_pipe(1, communication_address[not radio_number])  # using pipe 1
+
 
 def transmit(buffer):
     """Function to transmit a buffer"""
-    nrf.open_tx_pipe(communication_address)  # Set the transmit address
     nrf.listen = False  # Ensure it's in transmit mode
 
-    # Attempt to send the buffer
+    # Attempt to send the buffer --> aixi no perque s'ha de partir
     if nrf.send(buffer):
         print("Data sent successfully")
     else:
         print("Sending failed")
 
+
 def receive(timeout=10):
     """Function to receive data"""
-    nrf.open_rx_pipe(1, communication_address)  # Set the receive address
     nrf.listen = True  # Listen for incoming transmissions
 
     start = time.monotonic()  # Start timer
