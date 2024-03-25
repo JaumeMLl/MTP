@@ -23,11 +23,7 @@ def readFile():
     
     # Fragment file
     payload_size = 32
-
-    # TO DO: Falta completar el readFile(), fragmentar i retornar un string list, després a l'hora 
-    # d'enviar s'ha de fer un count i un bucle per enviar en aquest ordre.
-    # return list(string[0+i: length+i] for i in range(0, len(string), length))
-
+    return list(content[0+i: payload_size+i] for i in range(0, len(content), payload_size))
 
 # Initialize nRF24L01 radio
 SPI_BUS, CSN_PIN, CE_PIN = (None, None, None)
@@ -71,24 +67,38 @@ radio_number = bool(
     int(input("Which radio is this? Enter '0' or '1'. Defaults to '0' ") or 0)
 )
 
+if not nrf.begin():
+    raise OSError("nRF24L01 hardware isn't responding")
+
+nrf.dynamic_payloads = True
+nrf.ack_payloads = True
+
 # set TX address of RX node into the TX pipe
 nrf.open_tx_pipe(communication_address[radio_number])  # always uses pipe 0
 
 # set RX address of TX node into an RX pipe
 nrf.open_rx_pipe(1, communication_address[not radio_number])  # using pipe 1
 
+#For debugging
+nrf.print_pretty_details()
 
-def transmit(buffer):
-    """Function to transmit a buffer"""
+# TO DO : Add ACKs 
+
+def transmit(data):
+    """Function to transmit a data"""
     nrf.listen = False  # Ensure it's in transmit mode
     # Read and fragment the file
-    buffer = readFile()
-
-    # Attempt to send the buffer --> aixi no perque s'ha de partir
-    if nrf.send(buffer):
-        print("Data sent successfully")
-    else:
-        print("Sending failed")
+    data = readFile()
+    
+    count = len(data)
+    for i in range(count):
+        # Attempt to send the buffer 
+        print(count[i])
+        buffer = (data[i])
+        if nrf.send(buffer):
+            print("Data sent successfully")
+        else:
+            print("Sending failed")
 
 
 def receive(timeout=10):
@@ -122,3 +132,5 @@ if __name__ == "__main__":
         print("Received:", received_data)
     else:
         print("Invalid role selected.")
+
+# TO DO Change main in order to select Tx or Rx depending on switch
