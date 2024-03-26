@@ -71,7 +71,7 @@ def calculate_checksum(data):
     """Calculates a simple checksum of the given data."""
     return sum(data) & 0xFF
 
-def master(message, count=5, timeout=0.5):
+def master(message, count=5, timeout=500):
     nrf.listen = False  # ensure the nRF24L01 is in TX mode
     message = message.encode()  # convert string to bytes
 
