@@ -183,7 +183,7 @@ Para crear la clave SSH de GitHub, sigue estos pasos en la terminal:
    ```
 
 
-#Información Adicional
+# Información Adicional
 
 En la carpeta CircuitPython_nRF24L01 encontrarás los ejemplos originales para realizar los tests más simples.
 
