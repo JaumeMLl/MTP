@@ -15,7 +15,7 @@ Para crear la clave SSH de GitHub, sigue estos pasos en la terminal:
 5. Copia exactamente lo que salga al ejecutar:
    ```bash
    cat ~/.ssh/id_rsa.pub
-6.Luego, sigue estos pasos en GitHub:
+6. Luego, sigue estos pasos en GitHub:
    Ve a GitHub y inicia sesión.
    Haz clic en tu foto de perfil en la esquina superior derecha y selecciona Settings.
    En el menú lateral, selecciona SSH and GPG keys.
@@ -23,9 +23,11 @@ Para crear la clave SSH de GitHub, sigue estos pasos en la terminal:
    En el campo "Title", añade un nombre descriptivo para tu llave. Por ejemplo, "Raspberry Pi key".
    En el campo "Key", pega la llave SSH pública que copiaste anteriormente.
    Haz clic en Add SSH key.
-7. Finalmente, esto te confirmará si está bien creada la clave SSH:
+ 7. Finalmente, esto te confirmará si está bien creada la clave SSH:
    ```bash 
    ssh -T git@github.com
+ 
+
 
 Información Adicional
 En la carpeta CircuitPython_nRF24L01 encontrarás los ejemplos originales para realizar los tests más simples.
