@@ -180,7 +180,7 @@ Para crear la clave SSH de GitHub, sigue estos pasos en la terminal:
  7. Finalmente, esto te confirmará si está bien creada la clave SSH:
    ```bash 
    ssh -T git@github.com
- 
+   ```
 
 
 Información Adicional
