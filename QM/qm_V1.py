@@ -37,16 +37,12 @@ nrf = RF24(SPI_BUS, CSN_PIN, CE_PIN)
 #                10 = bus 1, CE0  # enable SPI bus 2 prior to running this
 #                21 = bus 2, CE1  # enable SPI bus 1 prior to running this
 
-# set the Power Amplifier level to -12 dBm since this test example is
-# usually run with nRF24L01 transceivers in close proximity
+# canviar si es necessari
 nrf.pa_level = -12
 
 # addresses needs to be in a buffer protocol object (bytearray)
 address = [b"1Node", b"2Node"]
 
-# to use different addresses on a pair of radios, we need a variable to
-# uniquely identify which address this radio will use to transmit
-# 0 uses address[0] to transmit, 1 uses address[1] to transmit
 radio_number = bool(
     int(input("Which radio is this? Enter '0' or '1'. Defaults to '0' ") or 0)
 )
@@ -56,16 +52,6 @@ nrf.open_tx_pipe(address[radio_number])  # always uses pipe 0
 
 # set RX address of TX node into an RX pipe
 nrf.open_rx_pipe(1, address[not radio_number])  # using pipe 1
-
-# using the python keyword global is bad practice. Instead we'll use a 1 item
-# list to store our float number for the payloads sent
-payload = [0.0]
-
-# uncomment the following 3 lines for compatibility with TMRh20 library
-# nrf.allow_ask_no_ack = False
-# nrf.dynamic_payloads = False
-# nrf.payload_length = 4
-
 
 def calculate_checksum(data):
     """Calculates a simple checksum of the given data."""
