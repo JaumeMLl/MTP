@@ -6,8 +6,6 @@ import struct
 import board
 from digitalio import DigitalInOut
 
-# if running this on a ATSAMD21 M0 based board
-# from circuitpython_nrf24l01.rf24_lite import RF24
 from circuitpython_nrf24l01.rf24 import RF24
 
 # invalid default values for scoping
@@ -37,8 +35,7 @@ nrf = RF24(SPI_BUS, CSN_PIN, CE_PIN)
 #                10 = bus 1, CE0  # enable SPI bus 2 prior to running this
 #                21 = bus 2, CE1  # enable SPI bus 1 prior to running this
 
-# set the Power Amplifier level to -12 dBm since this test example is
-# usually run with nRF24L01 transceivers in close proximity
+# Change the Power Amplifier level
 nrf.pa_level = -12
 
 # addresses needs to be in a buffer protocol object (bytearray)
@@ -56,15 +53,6 @@ nrf.open_tx_pipe(address[radio_number])  # always uses pipe 0
 
 # set RX address of TX node into an RX pipe
 nrf.open_rx_pipe(1, address[not radio_number])  # using pipe 1
-
-# using the python keyword global is bad practice. Instead we'll use a 1 item
-# list to store our float number for the payloads sent
-payload = [0.0]
-
-# uncomment the following 3 lines for compatibility with TMRh20 library
-# nrf.allow_ask_no_ack = False
-# nrf.dynamic_payloads = False
-# nrf.payload_length = 4
 
 
 def master(message, count=5):
@@ -87,7 +75,7 @@ def master(message, count=5):
                     "{} us. Chunk: {}".format((end_timer - start_timer) / 1000, chunk)
                 )
             # Espera para el próximo envío para evitar saturación
-            time.sleep(0.1)  # adjust as necessary
+            time.sleep(1)  # adjust as necessary
         count -= 1
         print("One message cycle complete, remaining:", count)
 
