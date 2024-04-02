@@ -16,7 +16,7 @@ try:  # on Linux
 
     SPI_BUS = spidev.SpiDev()  # for a faster interface on linux
     CSN_PIN = 0  # use CE0 on default bus (even faster than using any pin)
-    CE_PIN = DigitalInOut(board.D22)  # using pin gpio22 (BCM numbering)
+    CE_PIN = DigitalInOut(board.D25)  # using pin gpio22 (BCM numbering)
 
 except ImportError:  # on CircuitPython only
     # using board.SPI() automatically selects the MCU's
@@ -91,6 +91,7 @@ def slave(timeout=6):
         while nrf.available():
             # fetch payloads from RX FIFO until it's empty
             buffer = nrf.read()
+            print(f'Buffer: {buffer}')
             message.append(buffer)
             # reset the start time upon successful reception
             start = time.monotonic()
