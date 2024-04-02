@@ -7,14 +7,14 @@ import chardet
 import os
 from digitalio import DigitalInOut
 from circuitpython_nrf24l01.rf24 import RF24
-
+# Source code for nrf25l01.rf24 https://circuitpython-nrf24l01.readthedocs.io/en/1.3.0/_modules/circuitpython_nrf24l01/rf24.html#RF24.open_tx_pipe
 
 # Configuración inicial del SPI y pines para nRF24L01+
 try:
     import spidev
     SPI_BUS = spidev.SpiDev()
     CSN_PIN = 0
-    CE_PIN = DigitalInOut(board.D22)
+    CE_PIN = DigitalInOut(board.D25)
 except ImportError:
     SPI_BUS = board.SPI()
     CE_PIN = DigitalInOut(board.D4)
