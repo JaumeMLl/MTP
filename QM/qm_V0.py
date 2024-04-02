@@ -88,7 +88,7 @@ def slave(timeout=6):
         while nrf.available():
             # fetch payloads from RX FIFO until it's empty
             buffer = nrf.read()
-            print(f'Buffer: {buffer}')
+            print(f'Buffer: {buffer}')  # Puedes quitar este print si ya no lo necesitas
             message.append(buffer)
             # reset the start time upon successful reception
             start = time.monotonic()
@@ -96,9 +96,14 @@ def slave(timeout=6):
     # Concatenate all chunks and decode to a string
     complete_message = b"".join(message).decode()
 
-    print(f"Received message: {complete_message}")
+    # Writing the received message to a file
+    with open('resultado.txt', 'w') as file:
+        file.write(complete_message)
+
+    print("Received message stored in 'resultado.txt'")
 
     nrf.listen = False  # recommended behavior is to keep in TX mode while idle
+
 
 def set_role():
     """Set the role using stdin stream."""
