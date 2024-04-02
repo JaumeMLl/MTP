@@ -4,6 +4,7 @@ import time
 import board
 import subprocess
 import chardet
+import os
 from digitalio import DigitalInOut
 from circuitpython_nrf24l01.rf24 import RF24
 
@@ -65,14 +66,28 @@ def get_path():
     path = rpistr + line + "/"
     return path
 
+# Write protocol
+def write_protocol(received_data):
+    # Get the path to the USB drive
+    usb_path = get_path()
+    # Check if the USB drive is mounted
+    if os.path.exists(usb_path):
+        # Specify the filename
+        new_file = os.path.join(usb_path, 'received.txt')
+        with open(new_file, 'w') as file: 
+            file.write(received_data)
+    else:
+        print("USB drive not found.")
+
+
 def master(compressed_data, count=5, timeout=500):
-    nrf.listen = False
+    nrf.listen = False # Tx
 
-
-    # Ajusta este valor si es necesario, según la eficiencia de compresión esperada
+    # Adjust the value to compression efficiency
     chunk_size = 30
     chunks = [compressed_data[i:i + chunk_size] for i in range(0, len(compressed_data), chunk_size)]
 
+    # Compression
     for chunk_number, chunk in enumerate(chunks):
         sequence_byte = struct.pack('B', chunk_number % 256)
         checksum = calculate_checksum(chunk)
@@ -82,7 +97,8 @@ def master(compressed_data, count=5, timeout=500):
         if len(chunk_with_metadata) > 32:
             print(f"El fragmento comprimido {chunk_number + 1} excede el límite de tamaño.")
             continue
-
+        
+        # Sending, count attemps to send each chunck
         print(f"Enviando fragmento {chunk_number + 1}/{len(chunks)}")
         attempt = 0
         while attempt < count:
@@ -104,6 +120,7 @@ def master(compressed_data, count=5, timeout=500):
 def slave(timeout=6):
     nrf.listen = True  # Radio en modo RX para recibir datos
     start_time = time.monotonic()  # Captura el tiempo inicial
+    received_data = ''
 
     while time.monotonic() - start_time < timeout:
         if nrf.available():
@@ -121,6 +138,8 @@ def slave(timeout=6):
                     print(f"Fragmento {sequence} descomprimido y verificado correctamente.")
                     # Envía ACK si la descompresión y verificación son exitosas
                     nrf.send(b'ACK')
+                    # Saves data in received_data string
+                    received_data += decompressed_data
                     start_time = time.monotonic()  # Restablece el temporizador tras recibir y verificar correctamente
                 else:
                     print(f"Error de checksum en el fragmento {sequence}.")
@@ -130,20 +149,27 @@ def slave(timeout=6):
                 # No envía ACK si hay un error de descompresión
 
     nrf.listen = False  # Cambia a modo TX tras completar la recepción
+    return received_data
 
 
 def set_role():
     role = input("Which radio is this? Enter '0' for sender, '1' for receiver: ").strip()
     if role == '0':
-        # Get path from USB
+        # Read 
         path = get_path()
         data = read_file(path)
         print(f"Original size: {len(data)} bytes.")
+        # Compression
         compressed_data = compress_data(data)
         print(f"Compressed size: {len(compressed_data)} bytes.")
-        master(compressed_data)  # Asumiendo que master ahora acepta datos binarios comprimidos directamente
+        # Send (assuming master accepts compressed data already)
+        master(compressed_data)  
     elif role == '1':
-        slave()
+        # Receive
+        received_data = slave()
+        # Write 
+        write_protocol(received_data)
+        
     else:
         print("Invalid role selected. Please enter '0' or '1'.")
 
