@@ -1,6 +1,3 @@
-"""
-Simple example of using the RF24 class.
-"""
 import time
 import struct
 import board
@@ -54,12 +51,14 @@ nrf.open_tx_pipe(address[radio_number])  # always uses pipe 0
 # set RX address of TX node into an RX pipe
 nrf.open_rx_pipe(1, address[not radio_number])  # using pipe 1
 
-
-def master(message, count=1):
+def master(filepath, count=1):
     nrf.listen = False  # ensure the nRF24L01 is in TX mode
-    message = message.encode()  # convert string to bytes
+    
+    # Read the content of the file
+    with open(filepath, 'r') as file:
+        message = file.read().encode()  # read the content and convert to bytes
 
-    # Divide el mensaje en chunks de 32 bytes
+    # Divide the message into 32-byte chunks
     chunks = [message[i:i + 32] for i in range(0, len(message), 32)]
 
     while count:
@@ -74,12 +73,10 @@ def master(message, count=1):
                     "Chunk sent successfully! Time to Transmit:",
                     "{} us. Chunk: {}".format((end_timer - start_timer) / 1000, chunk)
                 )
-            # Espera para el próximo envío para evitar saturación
+            # Wait for the next sending to avoid saturation
             time.sleep(1)  # adjust as necessary
         count -= 1
         print("One message cycle complete, remaining:", count)
-
-
 
 def slave(timeout=6):
     nrf.listen = True  # put radio into RX mode and power up
@@ -103,25 +100,20 @@ def slave(timeout=6):
 
     nrf.listen = False  # recommended behavior is to keep in TX mode while idle
 
-
 def set_role():
     """Set the role using stdin stream."""
     role = input(
         "*** Enter 'R' for receiver role.\n"
-        "*** Enter 'T' for transmitter role followed by the message.\n"
+        "*** Enter 'T' for transmitter role\n"
         "*** Enter 'Q' to quit example.\n"
     ).strip().upper()
 
     if role == 'R':
         slave()
         return True
-    elif role.startswith('T'):
-        # Extrae el mensaje de la entrada del usuario después de la letra 'T'
-        message = role[1:].strip()  # Asume que el mensaje sigue inmediatamente después de 'T'
-        if message:
-            master(message)
-        else:
-            print("Please enter a message to send after 'T'.")
+    elif role == 'T':
+        filepath = 'mtp.txt'  # Define the name of the file here
+        master(filepath)
         return True
     elif role == 'Q':
         nrf.power = False
@@ -129,10 +121,6 @@ def set_role():
     else:
         print(role, "is an unrecognized input. Please try again.")
         return set_role()
-
-
-
-print("    nRF24L01 Simple test")
 
 if __name__ == "__main__":
     try:
