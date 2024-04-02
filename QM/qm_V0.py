@@ -55,7 +55,7 @@ nrf.open_tx_pipe(address[radio_number])  # always uses pipe 0
 nrf.open_rx_pipe(1, address[not radio_number])  # using pipe 1
 
 
-def master(message, count=5):
+def master(message, count=1):
     nrf.listen = False  # ensure the nRF24L01 is in TX mode
     message = message.encode()  # convert string to bytes
 
