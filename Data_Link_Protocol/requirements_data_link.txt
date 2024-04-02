@@ -1,7 +1,0 @@
-Data encapsulation: The link layer takes data packets from the network layer and encapsulates them into frames, adding headers and tails with information necessary for transmission, such as hardware addresses and control sequences.
-
-Flow control: Ensures that the sender does not overload the receiver by sending data more rapidly than it can be processed.
-
-Error control: Detects and, in some cases, corrects errors that may have occurred during transmission. This is achieved through checksums, sequence numbers, and acknowledgments.
-
-Medium Access Control (MAC): Determines how devices on the same physical network share the transmission medium. This is especially important in networks with a shared medium, such as wireless networks or Ethernet.
