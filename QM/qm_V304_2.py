@@ -86,6 +86,16 @@ def get_file_path():
     print('USB Path:', filepath)
     return filepath
 
+def write_file(complete_message):
+    path = "/media/mtp/MTP/"
+   
+    destination_path = path + "resultado.txt"
+    with open(destination_path, 'w') as file:
+        file.write(complete_message)
+
+    print("Received message stored in '{}'".format(destination_path))  
+    
+
 def master(count=1):
     nrf.listen = False  # ensure the nRF24L01 is in TX mode
     filepath = get_file_path()
@@ -130,10 +140,7 @@ def slave(timeout=6):
     complete_message = b"".join(message).decode()
 
     # Writing the received message to a file
-    with open('resultado.txt', 'w') as file:
-        file.write(complete_message)
-
-    print("Received message stored in 'resultado.txt'")
+    write_file(complete_message)
 
     nrf.listen = False  # recommended behavior is to keep in TX mode while idle
 
