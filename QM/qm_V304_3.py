@@ -86,6 +86,16 @@ def get_file_path():
     print('USB Path:', filepath)
     return filepath
 
+def write_file(complete_message):
+    path = "/media/mtp/MTP/"
+   
+    destination_path = path + "resultado.txt"
+    with open(destination_path, 'w') as file:
+        file.write(complete_message)
+
+    print("Received message stored in '{}'".format(destination_path))  
+    
+
 def master(count=1):
     nrf.listen = False  # ensure the nRF24L01 is in TX mode
     filepath = get_file_path()
@@ -106,8 +116,21 @@ def master(count=1):
                     "Chunk sent successfully! Time to Transmit:",
                     "{} us. Chunk: {}".format((end_timer - start_timer) / 1000, chunk)
                 )
-            # Wait for the next sending to avoid saturation
-            time.sleep(1)  # adjust as necessary
+            # Wait for ACK from the receiver
+                ack_received = False
+                timeout = 2  # Timeout in seconds
+                start_time = time.monotonic()
+                while (time.monotonic() - start_time) < timeout:
+                    if nrf.available():
+                        ack = nrf.read()
+                        if ack == b'ACK':
+                            ack_received = True
+                            break
+                if ack_received:
+                    print("ACK received successfully.")
+                    break  # Move to the next chunk
+                else:
+                    print("Timeout: No ACK received. Resending...")
         count -= 1
         print("One message cycle complete, remaining:", count)
 
@@ -130,10 +153,7 @@ def slave(timeout=6):
     complete_message = b"".join(message).decode()
 
     # Writing the received message to a file
-    with open('resultado.txt', 'w') as file:
-        file.write(complete_message)
-
-    print("Received message stored in 'resultado.txt'")
+    write_file(complete_message)
 
     nrf.listen = False  # recommended behavior is to keep in TX mode while idle
 
