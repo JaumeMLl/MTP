@@ -110,6 +110,8 @@ def slave(timeout=6):
     expected_sequence = 0
     message = []  # list to accumulate message chunks
 
+    start = time.monotonic()  # Inicializa start aquí
+
     while True:
         if nrf.available():
             buffer = nrf.read()  # fetch the payload
@@ -134,7 +136,7 @@ def slave(timeout=6):
 
 def set_role():
     """Set the role using stdin stream."""
-    role_input = input(
+    role = input(
         "*** Enter 'R' for receiver role.\n"
         "*** Enter 'T' followed by a space and your message for transmitter role.\n"
         "*** Enter 'Q' to quit example.\n"
