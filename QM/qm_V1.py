@@ -18,7 +18,7 @@ try:  # on Linux
 
     SPI_BUS = spidev.SpiDev()  # for a faster interface on linux
     CSN_PIN = 0  # use CE0 on default bus (even faster than using any pin)
-    CE_PIN = DigitalInOut(board.D22)  # using pin gpio22 (BCM numbering)
+    CE_PIN = DigitalInOut(board.D25)  # using pin gpio22 (BCM numbering)
 
 except ImportError:  # on CircuitPython only
     # using board.SPI() automatically selects the MCU's
@@ -57,9 +57,12 @@ def calculate_checksum(data):
     """Calculates a simple checksum of the given data."""
     return sum(data) & 0xFF
 
-def master(message, count=5, timeout=500):
+def master(filepath, count=1, timeout=500):
     nrf.listen = False  # ensure the nRF24L01 is in TX mode
-    message = message.encode()  # convert string to bytes
+
+    # Read the content of the file
+    with open(filepath, 'r') as file:
+        message = file.read().encode()  # read the content and convert to bytes
 
     # Divide el mensaje en chunks de 30 bytes para dejar espacio para el número de secuencia y checksum
     chunks = [message[i:i + 30] for i in range(0, len(message), 30)]
@@ -137,26 +140,20 @@ def set_role():
         "*** Enter 'Q' to quit example.\n"
     ).strip()
 
-    if role_input.upper().startswith('R'):
+    if role == 'R':
         slave()
         return True
-    elif role_input.upper().startswith('T'):
-        message = role_input[2:].strip()  # Extract message
-        if message:
-            master(message)
-        else:
-            print("No message provided. Please enter a message after 'T'.")
+    elif role == 'T':
+        filepath = 'mtp.txt'  # Define the name of the file here
+        master(filepath)
         return True
-    elif role_input.upper() == 'Q':
+    elif role == 'Q':
         nrf.power = False
         return False
     else:
-        print(role_input.split()[0], "is an unrecognized input. Please try again.")
+        print(role, "is an unrecognized input. Please try again.")
         return set_role()
 
-
-
-print("    nRF24L01 Simple test")
 
 if __name__ == "__main__":
     try:
