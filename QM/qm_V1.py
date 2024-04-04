@@ -70,13 +70,23 @@ def master(filepath, count=1):
             print("send() failed or timed out")
         else:
             print(f"Chunk sent successfully! Time to Transmit: {(end_timer - start_timer) / 1000} us. Chunk: {chunk}")
-
-            # Esperar y leer el ACK payload aquí
-            if nrf.is_ack_payload_available():  # Este método y su nombre exacto dependerán de tu biblioteca
-                ack_payload = nrf.read_ack_payload()  # Este método puede variar
-                print(f"Received ACK payload: {ack_payload}")
-
-        time.sleep(1)  # adjust as necessary
+        # Wait for ACK from the receiver
+            ack_received = False
+            timeout = 5  # Timeout in seconds
+            start_time = time.monotonic()
+            while (time.monotonic() - start_time) < timeout:
+                if nrf.available():
+                    ack = nrf.read()
+                    if ack == b'ACK':
+                        ack_received = True
+                        break
+            if ack_received:
+                    print("ACK received successfully.")
+                    break  # Move to the next chunk
+            else:
+                print("Timeout: No ACK received. Resending...")
+        count -= 1
+        print("One message cycle complete, remaining:", count)
 
     print("Message transmission complete.")
 
@@ -92,11 +102,6 @@ def slave(timeout=6):
             buffer = nrf.read()
             print(f'Buffer: {buffer}')  # Puedes quitar este print si ya no lo necesitas
             message.append(buffer)
-
-            # Aquí cargamos el ACK payload después de recibir un mensaje
-            ack_payload = b'ACK from Slave'
-            nrf.write_ack_payload(1, ack_payload, ack=True)  # Assumiendo esta función está disponible
-
             start = time.monotonic()  # reset the start time upon successful reception
 
     complete_message = b"".join(message).decode()
