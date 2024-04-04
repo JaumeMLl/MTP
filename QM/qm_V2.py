@@ -53,7 +53,7 @@ nrf.open_tx_pipe(address[radio_number])  # always uses pipe 0
 # set RX address of TX node into an RX pipe
 nrf.open_rx_pipe(1, address[not radio_number])  # using pipe 1
 
-def master(filepath, count=1):
+def master(filepath, count=5):
     nrf.listen = False  # ensure the nRF24L01 is in TX mode
 
     with open(filepath, 'r') as file:
@@ -150,7 +150,10 @@ def set_role():
         slave()
         return True
     elif role == 'T':
-        filepath = 'mtp.txt'  # Define the name of the file here
+        filepath = '/mnt/usbdrive/mtp.txt'  # Ruta completa al archivo en el directorio /mnt/usbdrive
+        if not os.path.exists(filepath):
+            print(f"File not found: {filepath}")
+            return True
         master(filepath)
         return True
     elif role == 'Q':
