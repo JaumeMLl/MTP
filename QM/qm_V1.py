@@ -1,13 +1,8 @@
-"""
-Simple example of using the RF24 class.
-"""
 import time
 import struct
 import board
 from digitalio import DigitalInOut
 
-# if running this on a ATSAMD21 M0 based board
-# from circuitpython_nrf24l01.rf24_lite import RF24
 from circuitpython_nrf24l01.rf24 import RF24
 
 # invalid default values for scoping
@@ -37,12 +32,17 @@ nrf = RF24(SPI_BUS, CSN_PIN, CE_PIN)
 #                10 = bus 1, CE0  # enable SPI bus 2 prior to running this
 #                21 = bus 2, CE1  # enable SPI bus 1 prior to running this
 
-# canviar si es necessari
+# Change the Power Amplifier level
 nrf.pa_level = -12
+## to enable the custom ACK payload feature
+nrf.ack = True  # False disables again
 
 # addresses needs to be in a buffer protocol object (bytearray)
 address = [b"1Node", b"2Node"]
 
+# to use different addresses on a pair of radios, we need a variable to
+# uniquely identify which address this radio will use to transmit
+# 0 uses address[0] to transmit, 1 uses address[1] to transmit
 radio_number = bool(
     int(input("Which radio is this? Enter '0' or '1'. Defaults to '0' ") or 0)
 )
@@ -53,94 +53,80 @@ nrf.open_tx_pipe(address[radio_number])  # always uses pipe 0
 # set RX address of TX node into an RX pipe
 nrf.open_rx_pipe(1, address[not radio_number])  # using pipe 1
 
-def calculate_checksum(data):
-    """Calculates a simple checksum of the given data."""
-    return sum(data) & 0xFF
-
-def master(filepath, count=1, timeout=500):
+def master(filepath, count=5):
     nrf.listen = False  # ensure the nRF24L01 is in TX mode
 
     # Read the content of the file
     with open(filepath, 'r') as file:
         message = file.read().encode()  # read the content and convert to bytes
 
-    # Divide el mensaje en chunks de 30 bytes para dejar espacio para el número de secuencia y checksum
-    chunks = [message[i:i + 30] for i in range(0, len(message), 30)]
+    # Divide the message into 32-byte chunks
+    chunks = [message[i:i + 32] for i in range(0, len(message), 32)]
 
-    for chunk_number, chunk in enumerate(chunks):
-        sequence_byte = struct.pack('B', chunk_number % 256)  # Un byte para el número de secuencia
-        checksum = calculate_checksum(chunk)
-        chunk_with_metadata = sequence_byte + chunk + struct.pack('B', checksum)
-
-        # Asegúrate de que el tamaño total es <= 32 bytes
-        if len(chunk_with_metadata) > 32:
-            raise ValueError(f"El fragmento excede el tamaño máximo permitido. Tamaño: {len(chunk_with_metadata)} bytes.")
-
-        attempt = 0
-        ack_received = False
-        while attempt < count and not ack_received:
-            print(f"Sending chunk {chunk_number + 1}/{len(chunks)}: {chunk_with_metadata}")
-            nrf.send(chunk_with_metadata)
-            nrf.listen = True  # start listening for ACK
-            start = time.monotonic()
-            while time.monotonic() - start < timeout:
-                if nrf.available():
-                    received_payload = nrf.read()
-                    if received_payload == b'ACK':
-                        ack_received = True
-                        print(f"ACK Received for chunk {chunk_number + 1}")
-                        break
-            nrf.listen = False  # stop listening, prepare to send next chunk
-            if not ack_received:
-                print(f"No ACK received for chunk {chunk_number + 1}, resending...")
-                attempt += 1
-
-        if not ack_received:
-            print("Failed to receive ACK after several attempts, aborting send.")
-            break  # Exit the for loop if we failed to send a chunk
-
-        time.sleep(0.1)  # short delay before sending the next chunk
-
-    if ack_received:
-        print("All chunks sent successfully.")
-
+    while count:
+        for chunk in chunks:
+            start_timer = time.monotonic_ns()  # start timer
+            result = nrf.send(chunk)
+            end_timer = time.monotonic_ns()  # end timer
+            if not result:
+                print("send() failed or timed out")
+            else:
+                print(
+                    "Chunk sent successfully! Time to Transmit:",
+                    "{} us. Chunk: {}".format((end_timer - start_timer) / 1000, chunk)
+                )
+            # Wait for ACK from the receiver
+                ack_received = False
+                timeout = 2  # Timeout in seconds
+                start_time = time.monotonic()
+                while (time.monotonic() - start_time) < timeout:
+                    if nrf.available():
+                        ack = nrf.read()
+                        if ack == b'ACK':
+                            ack_received = True
+                            break
+                if ack_received:
+                    print("ACK received successfully.")
+                    break  # Move to the next chunk
+                else:
+                    print("Timeout: No ACK received. Resending...")
+        count -= 1
+        print("One message cycle complete, remaining:", count)
 
 def slave(timeout=6):
     nrf.listen = True  # put radio into RX mode and power up
-    expected_sequence = 0
+
     message = []  # list to accumulate message chunks
+    start = time.monotonic()
 
-    start = time.monotonic()  # Inicializa start aquí
-
-    while True:
-        if nrf.available():
-            buffer = nrf.read()  # fetch the payload
-            sequence, *data, received_checksum = struct.unpack('B' * len(buffer), buffer)
-            data = bytes(data)
-            if sequence == expected_sequence and calculate_checksum(data) == received_checksum:
-                message.append(data)
-                expected_sequence = (expected_sequence + 1) % 256  # increment sequence
-                nrf.send(b'ACK')  # send ACK only if the chunk is valid
-                print(f"Received and acknowledged chunk {sequence}.")
-            else:
-                print(f"Invalid chunk or out of order: {sequence}.")
-        elif time.monotonic() - start > timeout:
-            break
+    while (time.monotonic() - start) < timeout:
+        while nrf.available():
+            # fetch payloads from RX FIFO until it's empty
+            buffer = nrf.read()
+            print(f'Buffer: {buffer}')  # Puedes quitar este print si ya no lo necesitas
+            message.append(buffer)
+            # reset the start time upon successful reception
+            start = time.monotonic()
 
     # Concatenate all chunks and decode to a string
     complete_message = b"".join(message).decode()
-    print(f"Received message: {complete_message}")
-    nrf.listen = False  # recommended behavior is to keep in TX mode while idle
 
+    # Writing the received message to a file
+    with open('resultado.txt', 'w') as file:
+        file.write(complete_message)
+
+    print("Received message stored in 'resultado.txt'")
+
+    nrf.listen = False  # recommended behavior is to keep in TX mode while idle
 
 
 def set_role():
     """Set the role using stdin stream."""
     role = input(
         "*** Enter 'R' for receiver role.\n"
-        "*** Enter 'T' followed by a space and your message for transmitter role.\n"
+        "*** Enter 'T' for transmitter role\n"
         "*** Enter 'Q' to quit example.\n"
-    ).strip()
+    ).strip().upper()
 
     if role == 'R':
         slave()
@@ -155,7 +141,6 @@ def set_role():
     else:
         print(role, "is an unrecognized input. Please try again.")
         return set_role()
-
 
 if __name__ == "__main__":
     try:
