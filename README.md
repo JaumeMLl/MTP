@@ -41,7 +41,8 @@ En la carpeta QM están las tres versiones del Quick Mode (QM):
 
 # Información Adicional
 
-Para el directorio del usb con permisos de escritura (y de lectura)
+Para el directorio del usb con permisos de escritura (y de lectura) 
+
 1. 
    ```bash 
    lsblk
