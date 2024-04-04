@@ -53,45 +53,33 @@ nrf.open_tx_pipe(address[radio_number])  # always uses pipe 0
 # set RX address of TX node into an RX pipe
 nrf.open_rx_pipe(1, address[not radio_number])  # using pipe 1
 
-def master(filepath, count=5):
+def master(filepath, count=1):
     nrf.listen = False  # ensure the nRF24L01 is in TX mode
 
-    # Read the content of the file
     with open(filepath, 'r') as file:
-        message = file.read().encode()  # read the content and convert to bytes
+        message = file.read().encode()
 
-    # Divide the message into 32-byte chunks
     chunks = [message[i:i + 32] for i in range(0, len(message), 32)]
 
-    while count:
-        for chunk in chunks:
-            start_timer = time.monotonic_ns()  # start timer
-            result = nrf.send(chunk)
-            end_timer = time.monotonic_ns()  # end timer
-            if not result:
-                print("send() failed or timed out")
-            else:
-                print(
-                    "Chunk sent successfully! Time to Transmit:",
-                    "{} us. Chunk: {}".format((end_timer - start_timer) / 1000, chunk)
-                )
-            # Wait for ACK from the receiver
-                ack_received = False
-                timeout = 2  # Timeout in seconds
-                start_time = time.monotonic()
-                while (time.monotonic() - start_time) < timeout:
-                    if nrf.available():
-                        ack = nrf.read()
-                        if ack == b'ACK':
-                            ack_received = True
-                            break
-                if ack_received:
-                    print("ACK received successfully.")
-                    break  # Move to the next chunk
-                else:
-                    print("Timeout: No ACK received. Resending...")
-        count -= 1
-        print("One message cycle complete, remaining:", count)
+    for chunk in chunks:
+        start_timer = time.monotonic_ns()
+        result = nrf.send(chunk)
+        end_timer = time.monotonic_ns()
+
+        if not result:
+            print("send() failed or timed out")
+        else:
+            print(f"Chunk sent successfully! Time to Transmit: {(end_timer - start_timer) / 1000} us. Chunk: {chunk}")
+
+            # Esperar y leer el ACK payload aquí
+            if nrf.is_ack_payload_available():  # Este método y su nombre exacto dependerán de tu biblioteca
+                ack_payload = nrf.read_ack_payload()  # Este método puede variar
+                print(f"Received ACK payload: {ack_payload}")
+
+        time.sleep(1)  # adjust as necessary
+
+    print("Message transmission complete.")
+
 
 def slave(timeout=6):
     nrf.listen = True  # put radio into RX mode and power up
@@ -101,23 +89,23 @@ def slave(timeout=6):
 
     while (time.monotonic() - start) < timeout:
         while nrf.available():
-            # fetch payloads from RX FIFO until it's empty
             buffer = nrf.read()
             print(f'Buffer: {buffer}')  # Puedes quitar este print si ya no lo necesitas
             message.append(buffer)
-            # reset the start time upon successful reception
-            start = time.monotonic()
 
-    # Concatenate all chunks and decode to a string
+            # Aquí cargamos el ACK payload después de recibir un mensaje
+            ack_payload = b'ACK from Slave'
+            nrf.write_ack_payload(1, ack_payload, ack=True)  # Assumiendo esta función está disponible
+
+            start = time.monotonic()  # reset the start time upon successful reception
+
     complete_message = b"".join(message).decode()
-
-    # Writing the received message to a file
     with open('resultado.txt', 'w') as file:
         file.write(complete_message)
 
     print("Received message stored in 'resultado.txt'")
+    nrf.listen = False
 
-    nrf.listen = False  # recommended behavior is to keep in TX mode while idle
 
 
 def set_role():
