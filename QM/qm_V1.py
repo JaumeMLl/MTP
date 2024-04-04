@@ -62,24 +62,34 @@ def master(filepath, count=1):
     chunks = [message[i:i + 32] for i in range(0, len(message), 32)]
 
     for chunk in chunks:
-        sent_successfully = False
         attempt = 0
-        while not sent_successfully and attempt < count:
-            start_timer = time.monotonic_ns()
-            sent_successfully = nrf.send(chunk)
-            end_timer = time.monotonic_ns()
+        while attempt < count:
+            print(f"Sending chunk: {chunk}")
+            nrf.send(chunk)  # Enviar el chunk
+            nrf.listen = True  # Cambiar al modo RX para esperar el ACK
 
-            if sent_successfully:
-                print(f"Chunk sent successfully! Time to Transmit: {(end_timer - start_timer) / 1000} us. Chunk: {chunk}")
-            else:
-                print("Attempt {} failed, resending...".format(attempt + 1))
-                attempt += 1
-        if not sent_successfully:
-            print("Failed to send chunk after {} attempts.".format(count))
-            break  # Exit the loop if unable to send a chunk
+            start_time = time.monotonic()  # Iniciar el temporizador
+            while time.monotonic() - start_time < 5:  # Esperar hasta 5 segundos para recibir el ACK
+                if nrf.available():  # Verificar si hay un mensaje disponible
+                    received_payload = nrf.read()  # Leer el payload recibido
+                    if received_payload == b'ACK':  # Si se recibe el ACK esperado
+                        print("ACK received. Sending next chunk.")
+                        attempt = count  # Salir del bucle de reintento
+                        break  # Salir del bucle de espera
+                time.sleep(0.1)  # Pequeña pausa para evitar sobrecargar la CPU
+
+            nrf.listen = False  # Cambiar de nuevo al modo TX después de esperar el ACK
+
+            if attempt < count - 1:  # Si no se recibió el ACK, reintento
+                print("No ACK received. Retrying...")
+            attempt += 1
+
+        if attempt == count:  # Si se agotaron los intentos sin recibir ACK
+            print("Failed to receive ACK after maximum attempts. Moving to the next chunk.")
+            # Opcional: podrías elegir terminar el envío completamente aquí si es crítico
+            # break
 
     print("Message transmission complete.")
-
 
 
 def slave(timeout=6):
@@ -95,9 +105,9 @@ def slave(timeout=6):
             message.append(received_payload)
 
             # Preparar y enviar un mensaje de confirmación de vuelta al transmisor
-            confirmation_payload = b'ACK'  # Mensaje de confirmación
-            nrf.stop_listening()  # Dejar de escuchar para poder enviar
-            sent_successfully = nrf.send(confirmation_payload)  # Enviar el mensaje de confirmación
+            ack_payload = b'ACK'  # Mensaje de confirmación
+            nrf.listen = False  # Dejar de escuchar para poder enviar
+            sent_successfully = nrf.send(ack_payload)  # Enviar el mensaje de confirmación
 
             if sent_successfully:
                 print("Confirmation message sent successfully.")
