@@ -2,6 +2,7 @@ import time
 import struct
 import board
 from digitalio import DigitalInOut
+import os
 
 from circuitpython_nrf24l01.rf24 import RF24
 
