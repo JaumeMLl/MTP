@@ -62,15 +62,32 @@ def master(filepath, count=1):
     chunks = [message[i:i + 32] for i in range(0, len(message), 32)]
 
     for chunk in chunks:
-        sent_successfully = False
         attempt = 0
+        while attempt < count:
+            print(f"Sending chunk: {chunk}")
+            nrf.send(chunk)  # Enviar el chunk
+            nrf.listen = True  # Cambiar al modo RX para esperar el ACK
 
-        while not sent_successfully and attempt < count:
-            start_timer = time.monotonic_ns()
-            sent_successfully = nrf.send(chunk)
-            end_timer = time.monotonic_ns()
+            start_time = time.monotonic()  # Iniciar el temporizador
+            while time.monotonic() - start_time < 5:  # Esperar hasta 5 segundos para recibir el ACK
+                if nrf.available():  # Verificar si hay un mensaje disponible
+                    received_payload = nrf.read()  # Leer el payload recibido
+                    if received_payload == b'ACK':  # Si se recibe el ACK esperado
+                        print("ACK received. Sending next chunk.")
+                        attempt = count  # Salir del bucle de reintento
+                        break  # Salir del bucle de espera
+                time.sleep(0.1)  # Pequeña pausa para evitar sobrecargar la CPU
 
-         count)
+            nrf.listen = False  # Cambiar de nuevo al modo TX después de esperar el ACK
+
+            if attempt < count - 1:  # Si no se recibió el ACK, reintento
+                print("No ACK received. Retrying...")
+            attempt += 1
+
+        if attempt == count:  # Si se agotaron los intentos sin recibir ACK
+            print("Failed to receive ACK after maximum attempts. Moving to the next chunk.")
+            # Opcional: podrías elegir terminar el envío completamente aquí si es crítico
+            # break
 
     print("Message transmission complete.")
 
@@ -82,18 +99,42 @@ def slave(timeout=6):
     start = time.monotonic()
 
     while (time.monotonic() - start) < timeout:
-        while nrf.available():
-            buffer = nrf.read()
-            print(f'Buffer: {buffer}')  # Puedes quitar este print si ya no lo necesitas
-            message.append(buffer)
-            start = time.monotonic()  # reset the start time upon successful reception
+        if nrf.available():
+            received_payload = nrf.read()  # Leer el mensaje entrante
+            print(f'Received payload: {received_payload}')
+            message.append(received_payload)
 
-    complete_message = b"".join(message).decode()
-    with open('resultado.txt', 'w') as file:
+            # Preparar y enviar un mensaje de confirmación de vuelta al transmisor
+            ack_payload = b'ACK'  # Mensaje de confirmación
+            nrf.listen = False  # Dejar de escuchar para poder enviar
+            sent_successfully = nrf.send(ack_payload)  # Enviar el mensaje de confirmación
+
+            if sent_successfully:
+                print("Confirmation message sent successfully.")
+            else:
+                print("Failed to send confirmation message.")
+
+            nrf.listen = True  # Volver al modo de escucha después de enviar
+            start = time.monotonic()  # Restablecer el temporizador
+
+    # Concatenar y procesar el mensaje completo recibido, si es necesario
+    complete_message = b''.join(message).decode('utf-8')
+    print(f"Complete message received: {complete_message}")
+
+    # Opcional: Guardar el mensaje completo en un archivo
+    with open('received_message.txt', 'w') as file:
         file.write(complete_message)
 
-    print("Received message stored in 'resultado.txt'")
-    nrf.listen = False
+    print("Received message stored in 'received_message.txt'")
+
+    # Guardar también el mensaje completo en un archivo en /mnt/usbdrive
+    try:
+        with open('/mnt/usbdrive/received_message.txt', 'w') as file:
+            file.write(complete_message)
+        print("Received message also stored in '/mnt/usbdrive/received_message.txt'")
+    except Exception as e:
+        print(f"Failed to save the message in '/mnt/usbdrive'. Error: {e}")
+    nrf.listen = False  # Se recomienda mantener el transceptor en modo TX mientras está inactivo
 
 
 
