@@ -55,6 +55,10 @@ Then do:
 2. Look for the line with the contents: `PrivateMounts=yes`
 3. Change the yes in the line to no, like so: `PrivateMounts=no`
 4. reboot
+5. Configurar permisos de usbmount.  El archivo de configuración se encuentra en /etc/usbmount/usbmount.conf.
+6. Abre el archivo usbmount.conf como 'sudo nano' y busca la línea que comienza con MOUNTOPTIONS
+7. Cambia la linea por: MOUNTOPTIONS="sync,noexec,nodev,noatime,nodiratime,uid=pi,gid=pi,dmask=000,fmask=111"
+8. Guarda cambios y reinicia usbmount: sudo systemctl restart udisks2
 
 Your USB devices should now auto mount at `/media/usb0`, `/media/usb1` and so on.
 
