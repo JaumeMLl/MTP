@@ -2,6 +2,7 @@ import time
 import struct
 import board
 from digitalio import DigitalInOut
+import os
 
 from circuitpython_nrf24l01.rf24 import RF24
 
@@ -126,8 +127,15 @@ def slave(timeout=6):
         file.write(complete_message)
 
     print("Received message stored in 'received_message.txt'")
-    nrf.listen = False  # Se recomienda mantener el transceptor en modo TX mientras está inactivo
 
+    # Guardar también el mensaje completo en un archivo en /mnt/usbdrive
+    try:
+        with open('/mnt/usbdrive/received_message.txt', 'w') as file:
+            file.write(complete_message)
+        print("Received message also stored in '/mnt/usbdrive/received_message.txt'")
+    except Exception as e:
+        print(f"Failed to save the message in '/mnt/usbdrive'. Error: {e}")
+    nrf.listen = False  # Se recomienda mantener el transceptor en modo TX mientras está inactivo
 
 
 
@@ -143,7 +151,10 @@ def set_role():
         slave()
         return True
     elif role == 'T':
-        filepath = 'mtp.txt'  # Define the name of the file here
+        filepath = '/mnt/usbdrive/mtp.txt'  # Ruta completa al archivo en el directorio /mnt/usbdrive
+        if not os.path.exists(filepath):
+            print(f"File not found: {filepath}")
+            return True
         master(filepath)
         return True
     elif role == 'Q':
