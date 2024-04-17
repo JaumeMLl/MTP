@@ -65,6 +65,7 @@ Your USB devices should now auto mount at `/media/usb0`, `/media/usb1` and so on
 De hecho, como nuestra raspberry solo tiene un puerto USB, estará siempre en `/media/usb/`
 
 Reference: https://stackoverflow.com/questions/74474113/auto-mount-usb-drive-to-raspberry-pi-without-boot
+També recordar tema metadatos: fer ls -a al directory per veure TOTS els fitxers que hi ha.
 
 ### Configure USB ethernet
 In windows, all the files need to be edited with `Notepad++` if not, you could destroy the format.
