@@ -6,53 +6,74 @@ constant TIMEOUT;
 constant CHANNEL1;
 constant CHANNEL2;
 constant BROADCAST_ID;
+cosntant myID;
+
+constant fileRequest = xxx
+constant requestAcc = xxx
 
 # Variables
-CommsInfo commsInfo;
+CommsInfo commsInfo {
 	int rxId
 	int myId
 	int channel
+}
+
 bool fileFlag;
 ```
 
 ## Check State
 ```
-- Check State: 
-	+ Entry:
-		self.fileFlag = checkFileExists() # Check if file exists file inside computer
+- Check File State: 
 	+ During:
-		Do nothing
-	+ Transition: fileFlag == True #Do I have the file?
-		True -> Packet Possession State.
-		False -> File Request State
+		self.fileFlag = checkFileExists() # Check if file exists file inside computer
+	+ Transition: if(fileFlag == True) #Do I have the file?
+		True
+			insertFileCode(); #make code accecible in the code
+			ledOn(); #lights a led
+			state = Packet Possession State
+		False
+			state = File Request State
 ```
 
 ## Carrier
 ```
 - Packet Possession State:
 	+ During:
-		supplicantFlag = anySupplicant(commsInfo) # Listens channel 1 for File Request, search in the buffer for File Request, flush other messages. returns true if there is any suppliocant, sets the value of rxId
-	+ Transition1: supplicantFlag == True # Any Send Request from supplicant?
-		No -> Packet Possession State.
-		Yes -> Claim Message State
+		supplicantFlag = anySupplicant() # Listens channel 1 for File Request, search in the buffer for File Request, flush other messages. returns true if there is any suppliocant, sets the value of rxId
+	+ Transition1: if(supplicantFlag == True) # Any Send Request from supplicant?
+		True
+			state = Request Accepted State
+		False
+			state = Packet Possession State.
 		
-- Claim Message State:
-	+Entry:
-		sendClaimMessage(commsInfo) # Send Claim Message to the supplicant with id rxId inside commsInfo object.
+- Request Accepted State:
 	+ During:
-		transmitConfirmationFlag = anyTransmitConfirmation(rxInfo) # Listens channel 1 for Transmit Confirmation ACK. Search in the buffer for Transmit Confirmation ACK with its own destination id, flush other messages. There must be a timeOut inside this function)
-	+ Transition1: transmitConfirmationFlag == True?
-		Yes -> Carrier Packet Transition State.
-		No -> Packet Possession State
+		sendRequestAcc(commsInfo) # Send Request Accepted Message to the supplicant with id rxId. Add header with myId
+		transmitConfirmationFlag = anyTransmitAcc(rxInfo) # Listens channel 1 for Transmit Confirmation ACK. Search in the buffer for Transmit Confirmation ACK with its own destination id, flush other messages. There must be a timeOut inside this function
+	+ Transition: if(transmitAccFlag == True)
+		True
+			state = Packet Transmission State.
+		False
+			state = Packet Possession State
 	
-- Carrier Packet Transition State:
-	+ Entry:
-		commsInfo.setChannel(CHANNEL2)
+- Packet Transition State:
 	+ During:
-		packageTransmittedFlag = packageTransmition(commsInfo)
-		print("Packet Sent Correcly:" + packageTransmittedFlag)
+		while(True = neddToBackOff() || exit == true){ # listens to the channel and waits to be available to transmit
+			#do nothing
+			if(i < TIMEOUT){
+				exit = true
+			}
+			i++;
+		}
+		if(exit != true){
+			packageTransmittedFlag = packageTransmition(commsInfo) # Must change the channel and start a 1 to 1 communication
+			print("Packet Sent Correcly:" + packageTransmittedFlag)
+		}
+		#reset internal variables
+		exit = false
+		i = 0;
 	+ Transition:
-		-> Packet Possession State
+		state = Packet Possession State
 ```
 
 ## Supplicant
@@ -62,25 +83,27 @@ bool fileFlag;
 
 	+ During:
 		sendFileRequest(BROADCAST_ID) # Through channel 1, send request to all neighbors (broadcast)
-		carrierFlag = anyCarrier(commsInfo) #Liten through channel 1 searching for any carrier response
-		wait(x) # Wait a random amount of seconds to transmit again
-	+ Transition: carrierFlag = True # Do I have any response? 
-		Yes -> Transmit Confirmation State.
-		No -> Send Request Statee.
+		carrierFlag = anyCarrier(commsInfo) #Liten through channel 1 searching any Reuqest Accepted
+		wait(x) # Wait a random amount of seconds to transmit again. Make it a long time to avoid interferences (5 seconds)
+	+ Transition: if(carrierFlag = True) # Do I have any response? 
+		True
+			state = Transmit Confirmation State.
+		False
+			state = Send Request State.
 
 - Transmit Confirmation State: 
-	+ Entry:
-		flushBuffer() # Flush Buffer
 	+ During:
-		sendFileRequest(commsInfo) # Through channel 1, Send a Transmit Confirmation ACK to the carrier
+		sendTransmitionAccepted(commsInfo) # Through channel 1, Send a Transmit Confirmation ACK to the carrier
 	+ Transition:
-		-> Packet Transmision State
-- Packet Transmision State:
-	+ Entry:
-		commsInfo.setChannel(CHANNEL2)
+		state = Packet Reception State
+		
+- Packet Reception State:
 	+ During:
 		packageReceivedFlag = packageReception(commsInfo)
 	+ Transition: packageReceivedFlag == True # Transmission Acomplished?
-		Yes -> Packet Possession State
-		No -> Send Request State
+		True
+			ledOn();
+			state = Packet Possession State
+		False
+			state = Send Request State
 ```
