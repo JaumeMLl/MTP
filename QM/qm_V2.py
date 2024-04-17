@@ -135,7 +135,8 @@ def slave(timeout=6):
 
     # Opcional: Guardar el mensaje completo en un archivo
     filename = complete_message.split(b'separaciofitxer')[-1].decode('utf-8')
-    complete_message = complete_message[:-len(filename)-1]
+    long_desc = len(filename) + len(b'separaciofitxer')
+    complete_message = complete_message[:-long_desc]
     with open(filename, 'wb') as file:
         file.write(complete_message)
 
