@@ -29,12 +29,31 @@ Para crear la clave SSH de GitHub, sigue estos pasos en la terminal:
    ```
 
 
-# Información Adicional
+# Versiones
 
 En la carpeta CircuitPython_nRF24L01 encontrarás los ejemplos originales para realizar los tests más simples.
 
 En la carpeta QM están las tres versiones del Quick Mode (QM):
 
-- V0: La versión más simple de todas. El emisor, cuando se le pide por terminal que ponga la T de emisor, lo ha de seguir con el string que quiere transmitir. Por ejemplo: T HOLA MUNDO. En esta versión, el receptor solo escucha y no hay ningún tipo de comprobación.
-- V1: En esta versión se añade un checksum y se fragmenta el array a transmitir. Como 1 byte es de checksum, los chunks creados al fragmentar siempre son iguales o menores que 30 bytes. El receptor envía ACK si el checksum es correcto.
-- VFinal: Esta versión, en caso de funcionar, ya serviría para el QM. Primero lee el fichero mtp.txt que se encuentra en el mismo directorio, lo fragmenta en chunks y luego comprime cada uno de ellos. Ninguno de estos chunks puede pasar de los 30 bytes, igual que en V1, y aquí el receiver, hasta que no ha recibido el paquete, descomprimido y comprobado que el checksum es correcto y que se puede descomprimir correctamente, no envía el ACK.
+- V0: La versión más simple de todas. El emisor envia el fichero .txt del directorio fragmentado pero sin acks ni ningun tipo de comprobación. El receptor solo crea fichero .txt con la info en el mismo directorio de trabajo.
+- V1: Se añaden acks. Modificar count con el numero de reintentos deseados
+- V2: Se lee el fichero mtp.txt desde mnt/usbdrive donde se encuentra el usb, se envia su contenido (con acks para cada fragmento) y en el receptor se crea el .txt en el directorio de trabajo y en el directorio mnt/usbdrive donde se encuentra el usb del receptor
+
+# Información Adicional
+
+Para el directorio del usb con permisos de escritura (y de lectura) 
+
+1. 
+   ```bash 
+   lsblk
+   ```
+2. 
+   ```bash 
+   sudo blkid
+   ```
+3.  
+   ```bash 
+   sudo mount -t vfat -o uid=pi,gid=pi /dev/sda1 /mnt/usbdrive
+   ```
+
+
