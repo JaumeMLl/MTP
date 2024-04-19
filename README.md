@@ -57,3 +57,18 @@ Para el directorio del usb con permisos de escritura (y de lectura)
    ```
 
 
+>>>>>>> 0ee453c5ed5b5a67ecded36ce51ef372dba4969e
+
+# CANALS DE NRF2401
+Referència: https://lastminuteengineers.com/nrf24l01-arduino-wireless-communication/#rf-channel-frequency
+Hi ha una imatge on mostra el següent: 
+
+- Canals del 1 al 125
+- Espaiats cada 1MHz
+
+
+Per escollir el canal hem de fer això: 
+> Freq(Selected) = 2400 + CH(Selected)
+
+*Nota important* --> Sobretot per al NM
+> At 250kbps and 1Mbps air data rates, each channel takes up less than 1 MHz of bandwidth, so there is a 1 MHz gap between the two channels. However, for a 2 Mbps air data rate, 2MHz of bandwidth is required (greater than the resolution of the RF channel frequency setting). So, in 2 Mbps mode, keep a 2MHz gap between the two channels to ensure non-overlapping channels and reduce cross-talk.

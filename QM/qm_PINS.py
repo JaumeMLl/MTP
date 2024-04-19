@@ -59,15 +59,17 @@ address = [b"1Node", b"2Node"]
 # to use different addresses on a pair of radios, we need a variable to
 # uniquely identify which address this radio will use to transmit
 # 0 uses address[0] to transmit, 1 uses address[1] to transmit
+'''
 radio_number = bool(
     int(input("Which radio is this? Enter '0' or '1'. Defaults to '0' ") or 0)
 )
+'''
 
 # set TX address of RX node into the TX pipe
-nrf.open_tx_pipe(address[radio_number])  # always uses pipe 0
+nrf.open_tx_pipe(address[0])  # always uses pipe 0
 
 # set RX address of TX node into an RX pipe
-nrf.open_rx_pipe(1, address[not radio_number])  # using pipe 1
+nrf.open_rx_pipe(1, address[1])  # using pipe 1
 
 def master(filelist, count=5):
     nrf.listen = False  # ensure the nRF24L01 is in TX mode
