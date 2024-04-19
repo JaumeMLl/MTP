@@ -1,4 +1,5 @@
 # MTP - Equipo C
+<<<<<<< HEAD
 
 ## Pins
 
@@ -82,6 +83,9 @@ In windows, all the files need to be edited with `Notepad++` if not, you could d
 Reference: https://www.makeuseof.com/how-to-connect-raspberry-pi-to-laptop-or-pc-usb/
 
 ## Instrucciones para Crear la SSH Key para GitHub
+=======
+# Instrucciones para Crear la SSH Key para GitHub
+>>>>>>> 0ee453c5ed5b5a67ecded36ce51ef372dba4969e
 
 Para crear la clave SSH de GitHub, sigue estos pasos en la terminal:
 
@@ -105,6 +109,43 @@ Para crear la clave SSH de GitHub, sigue estos pasos en la terminal:
    En el campo "Title", añade un nombre descriptivo para tu llave. Por ejemplo, "Raspberry Pi key".
    En el campo "Key", pega la llave SSH pública que copiaste anteriormente.
    Haz clic en Add SSH key.
+<<<<<<< HEAD
 7. Finalmente, esto te confirmará si está bien creada la clave SSH:
    ```bash 
    ssh -T git@github.com
+=======
+ 7. Finalmente, esto te confirmará si está bien creada la clave SSH:
+   ```bash 
+   ssh -T git@github.com
+   ```
+
+
+# Versiones
+
+En la carpeta CircuitPython_nRF24L01 encontrarás los ejemplos originales para realizar los tests más simples.
+
+En la carpeta QM están las tres versiones del Quick Mode (QM):
+
+- V0: La versión más simple de todas. El emisor envia el fichero .txt del directorio fragmentado pero sin acks ni ningun tipo de comprobación. El receptor solo crea fichero .txt con la info en el mismo directorio de trabajo.
+- V1: Se añaden acks. Modificar count con el numero de reintentos deseados
+- V2: Se lee el fichero mtp.txt desde mnt/usbdrive donde se encuentra el usb, se envia su contenido (con acks para cada fragmento) y en el receptor se crea el .txt en el directorio de trabajo y en el directorio mnt/usbdrive donde se encuentra el usb del receptor
+
+# Información Adicional
+
+Para el directorio del usb con permisos de escritura (y de lectura) 
+
+1. 
+   ```bash 
+   lsblk
+   ```
+2. 
+   ```bash 
+   sudo blkid
+   ```
+3.  
+   ```bash 
+   sudo mount -t vfat -o uid=pi,gid=pi /dev/sda1 /mnt/usbdrive
+   ```
+
+
+>>>>>>> 0ee453c5ed5b5a67ecded36ce51ef372dba4969e

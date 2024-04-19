@@ -2,11 +2,6 @@ import time
 import struct
 import board
 from digitalio import DigitalInOut
-import os
-<<<<<<< HEAD
-import subprocess
-=======
->>>>>>> 0ee453c5ed5b5a67ecded36ce51ef372dba4969e
 
 from circuitpython_nrf24l01.rf24 import RF24
 
@@ -58,29 +53,11 @@ nrf.open_tx_pipe(address[radio_number])  # always uses pipe 0
 # set RX address of TX node into an RX pipe
 nrf.open_rx_pipe(1, address[not radio_number])  # using pipe 1
 
-<<<<<<< HEAD
-def master(filelist, count=5):
-    nrf.listen = False  # ensure the nRF24L01 is in TX mode
-
-    #with open(filepath, 'r') as file:
-    #    message = file.read().encode()
-    
-    ## TODO: fix this. It is not working
-    # message = b''
-    # for filepath in filelist:
-    #     file = open(filepath,'rb')
-    #     message += file.read()
-    
-    filepath = filelist[-1]
-    # This line stores the filename in the message
-    message = open(filepath, 'rb').read() + b'separaciofitxer' + bytes(filepath.split('/')[-1], 'utf-8')
-=======
 def master(filepath, count=5):
     nrf.listen = False  # ensure the nRF24L01 is in TX mode
 
     with open(filepath, 'r') as file:
         message = file.read().encode()
->>>>>>> 0ee453c5ed5b5a67ecded36ce51ef372dba4969e
 
     chunks = [message[i:i + 32] for i in range(0, len(message), 32)]
 
@@ -141,27 +118,6 @@ def slave(timeout=6):
             start = time.monotonic()  # Restablecer el temporizador
 
     # Concatenar y procesar el mensaje completo recibido, si es necesario
-<<<<<<< HEAD
-    complete_message = b''.join(message)
-    print(f"Complete message received: {complete_message}")
-
-    # Opcional: Guardar el mensaje completo en un archivo
-    filename = complete_message.split(b'separaciofitxer')[-1].decode('utf-8')
-    long_desc = len(filename) + len(b'separaciofitxer')
-    complete_message = complete_message[:-long_desc]
-    with open(filename, 'wb') as file:
-        file.write(complete_message)
-
-    print("Received message stored in",filename)
-
-    # Guardar también el mensaje completo en un archivo en /mnt/usbdrive
-    try:
-        with open('/media/usb/'+filename, 'wb') as file:
-            file.write(complete_message)
-        print("Received message also stored in '/media/usb/'",filename)
-    except Exception as e:
-        print(f"Failed to save the message in '/media/usb'. Error: {e}")
-=======
     complete_message = b''.join(message).decode('utf-8')
     print(f"Complete message received: {complete_message}")
 
@@ -170,16 +126,8 @@ def slave(timeout=6):
         file.write(complete_message)
 
     print("Received message stored in 'received_message.txt'")
-
-    # Guardar también el mensaje completo en un archivo en /mnt/usbdrive
-    try:
-        with open('/mnt/usbdrive/received_message.txt', 'w') as file:
-            file.write(complete_message)
-        print("Received message also stored in '/mnt/usbdrive/received_message.txt'")
-    except Exception as e:
-        print(f"Failed to save the message in '/mnt/usbdrive'. Error: {e}")
->>>>>>> 0ee453c5ed5b5a67ecded36ce51ef372dba4969e
     nrf.listen = False  # Se recomienda mantener el transceptor en modo TX mientras está inactivo
+
 
 
 
@@ -195,23 +143,8 @@ def set_role():
         slave()
         return True
     elif role == 'T':
-<<<<<<< HEAD
-        path = '/media/usb'  # Ruta completa al archivo en el directorio /mnt/usbdrive
-        filelist = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
-        if not os.path.exists(path):
-            print(f"Path not found: {path}")
-            return True
-        if len(filelist) == 0:
-            print(f"No files in: {path}")
-            return True
-        master(filelist)
-=======
-        filepath = '/mnt/usbdrive/mtp.txt'  # Ruta completa al archivo en el directorio /mnt/usbdrive
-        if not os.path.exists(filepath):
-            print(f"File not found: {filepath}")
-            return True
+        filepath = 'mtp.txt'  # Define the name of the file here
         master(filepath)
->>>>>>> 0ee453c5ed5b5a67ecded36ce51ef372dba4969e
         return True
     elif role == 'Q':
         nrf.power = False
@@ -221,17 +154,6 @@ def set_role():
         return set_role()
 
 if __name__ == "__main__":
-<<<<<<< HEAD
-    print("Waiting for USB drive...")
-    num_devices = 0
-    while num_devices < 2:
-        df = subprocess.check_output("lsusb")
-        df = df.split(b'\n')
-        num_devices = len(df)-1
-        time.sleep(1)
-    print("USB unit connected")
-=======
->>>>>>> 0ee453c5ed5b5a67ecded36ce51ef372dba4969e
     try:
         while set_role():
             pass  # continue example until 'Q' is entered
