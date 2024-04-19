@@ -27,6 +27,19 @@ except ImportError:  # on CircuitPython only
     CE_PIN = DigitalInOut(board.D4)
     CSN_PIN = DigitalInOut(board.D5)
 
+# Initialize the leds
+GPIO.setmode(GPIO.BCM)
+# I CREATED VARIABLES FOR EASY READING
+TRANSMITTER_LED = 7
+RECEIVER_LED = 12
+CONNECTION_LED = 16
+NM_LED = 20
+USB_LED = 21
+GPIO.setup(TRANSMITTER_LED, GPIO.OUT)
+GPIO.setup(RECEIVER_LED, GPIO.OUT)
+GPIO.setup(CONNECTION_LED, GPIO.OUT)
+GPIO.setup(NM_LED, GPIO.OUT)
+GPIO.setup(USB_LED, GPIO.OUT)
 
 # initialize the nRF24L01 on the spi bus object
 nrf = RF24(SPI_BUS, CSN_PIN, CE_PIN)
@@ -58,6 +71,7 @@ nrf.open_rx_pipe(1, address[not radio_number])  # using pipe 1
 
 def master(filelist, count=5):
     nrf.listen = False  # ensure the nRF24L01 is in TX mode
+    GPIO.output(TRANSMITTER_LED, GPIO.HIGH)
 
     #with open(filepath, 'r') as file:
     #    message = file.read().encode()
@@ -103,11 +117,12 @@ def master(filelist, count=5):
             # break
 
     print("Message transmission complete.")
+    GPIO.output(TRANSMITTER_LED, GPIO.LOW)
 
 
 def slave(timeout=6):
     nrf.listen = True  # put radio into RX mode and power up
-
+    GPIO.output(RECEIVER_LED, GPIO.HIGH)
     message = []  # list to accumulate message chunks
     start = time.monotonic()
 
@@ -142,6 +157,7 @@ def slave(timeout=6):
         file.write(complete_message)
 
     print("Received message stored in",filename)
+    GPIO.output(RECEIVER_LED, GPIO.LOW)
 
     # Guardar también el mensaje completo en un archivo en /mnt/usbdrive
     try:
@@ -150,7 +166,7 @@ def slave(timeout=6):
         print("Received message also stored in '/media/usb/'",filename)
     except Exception as e:
         print(f"Failed to save the message in '/media/usb'. Error: {e}")
-    nrf.listen = False  # Se recomienda mantener el transceptor en modo TX mientras está inactivo
+   # nrf.listen = False  # Se recomienda mantener el transceptor en modo TX mientras está inactivo
 
 
 ''' OLD SET_ROLE 
@@ -193,8 +209,8 @@ def set_role():
     
     if switch_24_state:  # If GPIO pin 24 is on
         print("Network mode selected.")
+        GPIO.output(NM_LED, GPIO.HIGH)
         return False  # Exit the function
-        
     elif not switch_24_state and switch_14_state:  # If GPIO pin 24 is off and GPIO pin 14 is on
         print("Transmitter role selected.")
         path = '/media/usb'  # Ruta completa al archivo en el directorio /mnt/usbdrive
@@ -204,7 +220,7 @@ def set_role():
             return True
         if len(filelist) == 0:
             print(f"No files in: {path}")
-            return True
+            return True        
         master(filelist)
         return True
         
@@ -223,11 +239,14 @@ if __name__ == "__main__":
         num_devices = len(df)-1
         time.sleep(1)
     print("USB unit connected")
+    # Assumeixo que aquí ja ha trobat el USB
+    GPIO.output(USB_LED, GPIO.HIGH)    
     try:
         while set_role():
             pass  # continue example until 'Q' is entered
     except KeyboardInterrupt:
         print(" Keyboard Interrupt detected. Powering down radio...")
         nrf.power = False
+        GPIO.cleanup()
 else:
     print("    Run slave() on receiver\n    Run master() on transmitter")
