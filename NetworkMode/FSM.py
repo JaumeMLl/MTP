@@ -13,6 +13,14 @@ MY_ID = "myID"
 # Variables
 class CommsInfo:
     def __init__(self, rxId=None, myId=MY_ID, channel=None):
+        """
+        Initializes communication information.
+        
+        Parameters:
+        - rxId: The ID of the receiving device.
+        - myId: The ID of this device.
+        - channel: The communication channel.
+        """
         self.rxId = rxId
         self.myId = myId
         self.channel = channel
@@ -21,25 +29,42 @@ commsInfo = CommsInfo()
 fileFlag = False
 
 # Functions
+
 def checkFileExists():
-    path = '/media/usb'  # Ruta completa al archivo en el directorio donde se monta el USB
+    """
+    Checks if a file exists in the specified directory.
+    
+    Returns:
+    - True if the file exists, False otherwise.
+    """
+    path = '/media/usb'  # Full path to the directory where the USB is mounted
     filelist = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
     if not os.path.exists(path):
         print(f"Path not found: {path}")
-        r =  False
+        return False
     if len(filelist) == 0:
         print(f"No files in: {path}")
-        r  =  False
+        return False
     print("File Found")
-    r = True
+    return True
 
 def ledOn():
-    # Implementation to turn on LED
+    """
+    Simulates turning on an LED (for demonstration purposes).
+    """
     print("Turning LED on...")
 
 def anySupplicant(commsInfo):
-    # Implementation to check for any supplicant
-    r = True # For testing purposes
+    """
+    Checks for any supplicant device in the communication channel.
+    
+    Parameters:
+    - commsInfo: Communication information object.
+    
+    Returns:
+    - True if a supplicant device is detected, False otherwise.
+    """
+    r = True  # For testing purposes
     if r:
         print("Send Request Received")
     else:
@@ -47,12 +72,25 @@ def anySupplicant(commsInfo):
     return r
 
 def sendRequestAcc(commsInfo):
-    # Implementation to send request accepted message
+    """
+    Sends a request acceptance message to a requesting device.
+    
+    Parameters:
+    - commsInfo: Communication information object.
+    """
     print("Sending request accepted message...")
 
 def anyTransmitAcc(commsInfo):
-    # Implementation to check for transmit confirmation ACK
-    r = True # For testing purposes
+    """
+    Checks for acknowledgment of transmission from the receiving device.
+    
+    Parameters:
+    - commsInfo: Communication information object.
+    
+    Returns:
+    - True if acknowledgment is received, False otherwise.
+    """
+    r = True  # For testing purposes
     if r:
         print("Transmit Accepted Received")
     else:
@@ -60,8 +98,13 @@ def anyTransmitAcc(commsInfo):
     return r  
 
 def needToBackOff():
-    # Implementation to check if backoff is needed
-    r = False # For testing purposes
+    """
+    Checks if backoff is necessary before transmitting data.
+    
+    Returns:
+    - True if backoff is needed, False otherwise.
+    """
+    r = False  # For testing purposes
     if r:
         print("Need To Back Off")
     else:
@@ -69,8 +112,16 @@ def needToBackOff():
     return r
 
 def packageTransmission(commsInfo):
-    # Implementation for package transmission
-    r = True # For testing purposes
+    """
+    Manages the transmission of a data package.
+    
+    Parameters:
+    - commsInfo: Communication information object.
+    
+    Returns:
+    - True if the package is transmitted successfully, False otherwise.
+    """
+    r = True  # For testing purposes
     if r:
         print("Package Transmission Accomplished")
     else:
@@ -78,12 +129,25 @@ def packageTransmission(commsInfo):
     return r 
 
 def sendFileRequest(commsInfo):
-    # Implementation to send file request
+    """
+    Sends a file request to the receiving device.
+    
+    Parameters:
+    - commsInfo: Communication information object.
+    """
     print("Sending file request...")
 
 def anyCarrier(commsInfo):
-    # Implementation to check for any carrier
-    r = True # For testing purposes
+    """
+    Checks for the presence of a carrier signal in the communication channel.
+    
+    Parameters:
+    - commsInfo: Communication information object.
+    
+    Returns:
+    - True if a carrier signal is detected, False otherwise.
+    """
+    r = True  # For testing purposes
     if r:
         print("Request Accepted Received")
     else:
@@ -91,12 +155,25 @@ def anyCarrier(commsInfo):
     return r  
 
 def sendTransmitionAccepted(commsInfo):
-    # Implementation to send transmission accepted message
+    """
+    Sends a transmission acceptance message to the sending device.
+    
+    Parameters:
+    - commsInfo: Communication information object.
+    """
     print("Sending transmission accepted message...")
 
 def packageReception(commsInfo):
-    # Implementation for package reception
-    r = True # For testing purposes
+    """
+    Manages the reception of a data package.
+    
+    Parameters:
+    - commsInfo: Communication information object.
+    
+    Returns:
+    - True if the package is received successfully, False otherwise.
+    """
+    r = True  # For testing purposes
     if r:
         print("Package Reception Accomplished")
     else:
@@ -128,7 +205,9 @@ class StateMachine:
                 self.packet_reception_state()
 
     def check_file_state(self):
-        
+        """
+        Checks if a file exists and transitions accordingly.
+        """
         if checkFileExists():
             ledOn()
             self.state = "Packet Possession State"
@@ -136,6 +215,9 @@ class StateMachine:
             self.state = "Send Request State"
 
     def packet_possession_state(self):
+        """
+        Manages packet possession state and transitions accordingly.
+        """
         supplicantFlag = anySupplicant(commsInfo)
         if supplicantFlag:
             self.state = "Request Accepted State"
@@ -143,6 +225,9 @@ class StateMachine:
             self.state = "Packet Possession State"
 
     def request_accepted_state(self):
+        """
+        Manages request accepted state and transitions accordingly.
+        """
         sendRequestAcc(commsInfo)
         transmitAccFlag = anyTransmitAcc(commsInfo)
         if transmitAccFlag:
@@ -151,6 +236,9 @@ class StateMachine:
             self.state = "Packet Possession State"
 
     def packet_transmission_state(self):
+        """
+        Manages packet transmission state and transitions accordingly.
+        """
         exit = False
         i = 0
         while needToBackOff() or exit:
@@ -166,6 +254,9 @@ class StateMachine:
         self.state = "Packet Possession State"
 
     def send_request_state(self):
+        """
+        Manages send request state and transitions accordingly.
+        """
         sendFileRequest(commsInfo)
         carrierFlag = anyCarrier(commsInfo)
         if carrierFlag:
@@ -175,10 +266,16 @@ class StateMachine:
             self.state = "Send Request State"
 
     def transmit_confirmation_state(self):
+        """
+        Manages transmit confirmation state and transitions accordingly.
+        """
         sendTransmitionAccepted(commsInfo)
         self.state = "Packet Reception State"
 
     def packet_reception_state(self):
+        """
+        Manages packet reception state and transitions accordingly.
+        """
         commsInfo.channel = CHANNEL2
         packageReceivedFlag = packageReception(commsInfo)
         commsInfo.channel = CHANNEL1
