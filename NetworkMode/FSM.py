@@ -1,6 +1,7 @@
 from asyncio import sleep
 import random
 import time
+import os
 
 # Constants
 TIMEOUT = 10
@@ -21,13 +22,17 @@ fileFlag = False
 
 # Functions
 def checkFileExists():
-    # Implementation to check if file exists
-    r = False # For testing purposes
-    if r:
-        print("File Found")
-    else:
-        print("File NOT Found")
-    return r
+    path = '/media/usb'  # Ruta completa al archivo en el directorio donde se monta el USB
+    filelist = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+    if not os.path.exists(path):
+        print(f"Path not found: {path}")
+        r =  False
+    if len(filelist) == 0:
+        print(f"No files in: {path}")
+        r  =  False
+    print("File Found")
+    r = True
+
 def ledOn():
     # Implementation to turn on LED
     print("Turning LED on...")
