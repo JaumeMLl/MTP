@@ -2,6 +2,7 @@ from asyncio import sleep
 import random
 import time
 import os
+import numpy as np
 
 # Constants
 TIMEOUT = 10
@@ -37,8 +38,9 @@ def checkFileExists():
     Returns:
     - True if the file exists, False otherwise.
     """
-    path = '/media/usb'  # Full path to the directory where the USB is mounted
-    filelist = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+    path = '/media/usb'  # Ruta completa al archivo en el directorio donde se monta el USB
+    filelist = np.array([os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]) # Get the list of files in the directory
+    filelist = filelist[np.where([x.endswith(".txt") and not x.startswith(".") for x in filelist])[0]] # Get the elements that end with ".txt" and does not start with "."
     if not os.path.exists(path):
         print(f"Path not found: {path}")
         return False
@@ -57,12 +59,13 @@ def ledOn():
 def anySupplicant(commsInfo):
     """
     Checks for any supplicant device in the communication channel.
+    Waits for a file request message. (<- FileRequestMsg )
     
     Parameters:
     - commsInfo: Communication information object.
     
     Returns:
-    - True if a supplicant device is detected, False otherwise.
+    - True if FileRequestMesg is received, False otherwise.
     """
     r = True  # For testing purposes
     if r:
@@ -73,7 +76,7 @@ def anySupplicant(commsInfo):
 
 def sendRequestAcc(commsInfo):
     """
-    Sends a request acceptance message to a requesting device.
+    Sends a request acceptance message to a requesting device. (-> RequestAccMsg)
     
     Parameters:
     - commsInfo: Communication information object.
@@ -82,7 +85,7 @@ def sendRequestAcc(commsInfo):
 
 def anyTransmitAcc(commsInfo):
     """
-    Checks for acknowledgment of transmission from the receiving device.
+    Waits for a transmit accepted message. (<- TransmitAccMsg)
     
     Parameters:
     - commsInfo: Communication information object.
@@ -114,7 +117,8 @@ def needToBackOff():
 def packageTransmission(commsInfo):
     """
     Manages the transmission of a data package.
-    
+    Changes to Channel 2
+    Enables ack
     Parameters:
     - commsInfo: Communication information object.
     
@@ -130,7 +134,7 @@ def packageTransmission(commsInfo):
 
 def sendFileRequest(commsInfo):
     """
-    Sends a file request to the receiving device.
+    Sends a file request message to the receiving device. (-> FileRequestMsg)
     
     Parameters:
     - commsInfo: Communication information object.
@@ -140,7 +144,8 @@ def sendFileRequest(commsInfo):
 def anyCarrier(commsInfo):
     """
     Checks for the presence of a carrier signal in the communication channel.
-    
+    Waits for a request accepted message. (<- RequestAccMsg)
+
     Parameters:
     - commsInfo: Communication information object.
     
@@ -156,7 +161,7 @@ def anyCarrier(commsInfo):
 
 def sendTransmitionAccepted(commsInfo):
     """
-    Sends a transmission acceptance message to the sending device.
+    Sends a transmission acceptance message to the sending device. (-> TransmitAccMsg)
     
     Parameters:
     - commsInfo: Communication information object.
@@ -166,6 +171,8 @@ def sendTransmitionAccepted(commsInfo):
 def packageReception(commsInfo):
     """
     Manages the reception of a data package.
+    Changes to Channel 2
+    Enables ack
     
     Parameters:
     - commsInfo: Communication information object.
