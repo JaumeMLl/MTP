@@ -81,6 +81,9 @@ In windows, all the files need to be edited with `Notepad++` if not, you could d
 
 Reference: https://www.makeuseof.com/how-to-connect-raspberry-pi-to-laptop-or-pc-usb/
 
+En caso de que no te funcione podria ser fallo de los drivers.
+Intenta con este video que complementa el tutorial anterior: https://www.youtube.com/watch?v=XaTmG708Mss
+
 ## Instrucciones para Crear la SSH Key para GitHub
 
 Para crear la clave SSH de GitHub, sigue estos pasos en la terminal:
