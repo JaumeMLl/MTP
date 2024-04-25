@@ -9,6 +9,8 @@ import board
 from digitalio import DigitalInOut
 import subprocess
 
+from CommsMethods import wait_for_desired_message
+
 from circuitpython_nrf24l01.rf24 import RF24
 
 #---- CONSTANTS ----#
@@ -29,7 +31,7 @@ MY_PIPE_ID = TEAM_A1
 BROADCAST_ID = b"Bcast"
 
 FILE_REQUEST_MSG = b"FileRequestMsg"
-RequestAccMsg = b"RequestAcceptanceMsg"
+REQUEST_ACC_MSG = b"RequestAcceptanceMsg"
 TransmitAccMsg = b"TransmitAccMsg"
 
 #---- CONFIG ----#
@@ -87,7 +89,7 @@ class CommsInfo:
         self.responder_pipe_address = responder_pipe_address
         self.channel = channel
 
-#---- VARIABLES ----#
+#---- VARIABLES GLOBALES ----#
 comms_info = CommsInfo(BROADCAST_ID, BROADCAST_ID, CHANNEL1)
 
 #---- FUNCTIONS ----#
@@ -117,34 +119,44 @@ def ledOn():
     """
     print("Turning LED on...")
 
-def anySupplicant(comms_info):
+def anySupplicant():
     """
     Checks for any supplicant device in the communication channel.
-    Waits for a file request message. (<- FileRequestMsg )
+    
+    Waits for a File Request Message. (<- FILE_REQUEST_MSG )
+
+    Actualize the value of the comms_info.responder_pipe_address with the adress of the transmitter.
     
     Parameters:
-    - commsInfo: Communication information object.
-    
+    - comms_info: Communication information object.
+
     Returns:
     - True if FileRequestMesg is received, False otherwise.
     """
-    r = True  # For testing purposes
-    if r:
-        print("Send Request Received")
-    else:
-        print("Send Request NOT Received")
-    return r
+    return wait_for_desired_message(comms_info, FILE_REQUEST_MSG, TIMEOUT, nrf)
 
-def sendRequestAcc(comms_info):
+def sendRequestAcc():
     """
-    Sends a request acceptance message to a requesting device. (-> RequestAccMsg)
+    Sends a request acceptance message to a requesting device. (-> REQUEST_ACC_MSG)
     
     Parameters:
-    - commsInfo: Communication information object.
+    - comms_info: Communication information object.
     """
+    # Preparar y enviar un mensaje de confirmación de vuelta al transmisor
     print("Sending request accepted message...")
 
-def anyTransmitAcc(comms_info):
+    nrf.listen = False  # Dejar de escuchar para poder enviar
+    nrf.open_tx_pipe(comms_info.responder_pipe_address)
+    sent_successfully = nrf.send(MY_PIPE_ID+REQUEST_ACC_MSG)  # Enviar el mensaje de confirmación
+   
+    if sent_successfully:
+        print("Request Accepted Message sent successfully.")
+    else:
+        print("Failed to send Request Accepted Message.")
+   
+    nrf.listen = True  # Volver al modo de escucha después de enviar
+
+def anyTransmitAcc():
     """
     Waits for a transmit accepted message. (<- TransmitAccMsg)
     
@@ -175,7 +187,7 @@ def needToBackOff():
         print("NO Need To Back Off")
     return r
 
-def packageTransmission(comms_info):
+def packageTransmission():
     """
     Manages the transmission of a data package.
     Changes to Channel 2
@@ -193,7 +205,7 @@ def packageTransmission(comms_info):
         print("Package Transmission Failed")
     return r 
 
-def sendFileRequest(comms_info):
+def sendFileRequest():
     """
     Sends a file request message to the receiving device. (-> FileRequestMsg)
     
@@ -202,7 +214,7 @@ def sendFileRequest(comms_info):
     """
     print("Sending file request...")
 
-def anyCarrier(comms_info):
+def anyCarrier():
     """
     Checks for the presence of a carrier signal in the communication channel.
     Waits for a request accepted message. (<- RequestAccMsg)
@@ -220,7 +232,7 @@ def anyCarrier(comms_info):
         print("Carrier NOT Found")
     return r  
 
-def sendTransmitionAccepted(comms_info):
+def sendTransmitionAccepted():
     """
     Sends a transmission acceptance message to the sending device. (-> TransmitAccMsg)
     
@@ -229,7 +241,7 @@ def sendTransmitionAccepted(comms_info):
     """
     print("Sending transmission accepted message...")
 
-def packageReception(comms_info):
+def packageReception():
     """
     Manages the reception of a data package.
     Changes to Channel 2
@@ -286,7 +298,7 @@ class StateMachine:
         """
         Manages packet possession state and transitions accordingly.
         """
-        supplicantFlag = anySupplicant(comms_info)
+        supplicantFlag = anySupplicant()
         if supplicantFlag:
             self.state = "Request Accepted State"
         else:
@@ -296,8 +308,8 @@ class StateMachine:
         """
         Manages request accepted state and transitions accordingly.
         """
-        sendRequestAcc(comms_info)
-        transmitAccFlag = anyTransmitAcc(comms_info)
+        sendRequestAcc()
+        transmitAccFlag = anyTransmitAcc()
         if transmitAccFlag:
             self.state = "Packet Transmission State"
         else:
@@ -316,7 +328,7 @@ class StateMachine:
             i += 1
         if not exit:
             comms_info.channel = CHANNEL2
-            packageTransmittedFlag = packageTransmission(comms_info)
+            packageTransmittedFlag = packageTransmission()
             print("Packet Sent Correctly:", packageTransmittedFlag)
             comms_info.channel = CHANNEL1
         self.state = "Packet Possession State"
@@ -325,8 +337,8 @@ class StateMachine:
         """
         Manages send request state and transitions accordingly.
         """
-        sendFileRequest(comms_info)
-        carrierFlag = anyCarrier(comms_info)
+        sendFileRequest()
+        carrierFlag = anyCarrier()
         if carrierFlag:
             self.state = "Transmit Confirmation State"
         else:
@@ -337,7 +349,7 @@ class StateMachine:
         """
         Manages transmit confirmation state and transitions accordingly.
         """
-        sendTransmitionAccepted(comms_info)
+        sendTransmitionAccepted()
         self.state = "Packet Reception State"
 
     def packet_reception_state(self):
@@ -345,7 +357,7 @@ class StateMachine:
         Manages packet reception state and transitions accordingly.
         """
         comms_info.channel = CHANNEL2
-        packageReceivedFlag = packageReception(comms_info)
+        packageReceivedFlag = packageReception()
         comms_info.channel = CHANNEL1
         if packageReceivedFlag:
             ledOn()
