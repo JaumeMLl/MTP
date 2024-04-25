@@ -23,7 +23,7 @@ def wait_for_desired_message(comms_info, desired_message, timeout, nrf):
             # Read the received message
             received_message = []
             received_message = nrf.read()
-
+            print(f"Received Message: {received_message}")
             # Extract the responder ID and the actual message from the received message
             comms_info.responder_pipe_address = received_message[:5]
             actual_message = received_message[5+2:]  # Skip 5 bytes for responder ID and 2 bytes for separator ": "

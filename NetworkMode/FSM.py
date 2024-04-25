@@ -16,11 +16,11 @@ from circuitpython_nrf24l01.rf24 import RF24
 #---- CONSTANTS ----#
 # Team A IDs
 TEAM_A1 = b"pipA1"
-TEAM_A1 = b"pipB1"
-TEAM_A1 = b"pipB2"
-TEAM_A2 = b"pipA2"
-TEAM_A1 = b"pipC1"
-TEAM_A1 = b"pipC2"
+TEAM_A2 = b"pipB1"
+TEAM_B1 = b"pipB2"
+TEAM_B2 = b"pipA2"
+TEAM_C1 = b"pipC1"
+TEAM_C2 = b"pipC2"
 
 
 TIMEOUT = 10
@@ -88,6 +88,11 @@ class CommsInfo:
         self.listening_pipe_address = listening_pipe_address
         self.responder_pipe_address = responder_pipe_address
         self.channel = channel
+    
+    def __str__(self):
+        return f"CommsInfo(listening_pipe_address='{self.listening_pipe_address}', " \
+               f"responder_pipe_address='{self.responder_pipe_address}', " \
+               f"channel='{self.channel}')"
 
 #---- VARIABLES GLOBALES ----#
 comms_info = CommsInfo(BROADCAST_ID, BROADCAST_ID, CHANNEL1)
@@ -133,6 +138,8 @@ def anySupplicant():
     Returns:
     - True if FileRequestMesg is received, False otherwise.
     """
+
+    print(f"Channel Information: {comms_info}")
     return wait_for_desired_message(comms_info, FILE_REQUEST_MSG, TIMEOUT, nrf)
 
 def sendRequestAcc():
@@ -213,6 +220,20 @@ def sendFileRequest():
     - comms_info: Communication information object.
     """
     print("Sending file request...")
+    print(f"Channel Information: {comms_info}")
+
+    nrf.listen = False  # Dejar de escuchar para poder enviar
+    nrf.open_tx_pipe(comms_info.responder_pipe_address)
+    data_to_send = MY_PIPE_ID+b": "+FILE_REQUEST_MSG
+    print(f"About to send: {data_to_send}")
+    sent_successfully = nrf.send(data_to_send)  # Enviar el mensaje de confirmación
+   
+    if sent_successfully:
+        print("Request Accepted Message sent successfully.")
+    else:
+        print("Failed to send Request Accepted Message.")
+   
+    nrf.listen = True  # Volver al modo de escucha después de enviar
 
 def anyCarrier():
     """
@@ -225,7 +246,7 @@ def anyCarrier():
     Returns:
     - True if a carrier signal is detected, False otherwise.
     """
-    r = True  # For testing purposes
+    r = False  # For testing purposes
     if r:
         print("Request Accepted Received")
     else:
@@ -337,10 +358,13 @@ class StateMachine:
         """
         Manages send request state and transitions accordingly.
         """
-        sendFileRequest()
-        carrierFlag = anyCarrier()
+        carrierFlag = False
+        r = sendFileRequest()
+
+        if r:
+            carrierFlag = anyCarrier()
         if carrierFlag:
-            self.state = "Transmit Confirmation State"
+                self.state = "Transmit Confirmation State"
         else:
             time.sleep(random.randint(1, 5))  # Wait a random amount of seconds
             self.state = "Send Request State"
