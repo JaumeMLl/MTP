@@ -10,6 +10,7 @@ from digitalio import DigitalInOut
 import subprocess
 
 from CommsMethods import wait_for_desired_message
+from CommsMethods import send_message
 
 from circuitpython_nrf24l01.rf24 import RF24
 
@@ -76,7 +77,7 @@ nrf.open_rx_pipe(1, BROADCAST_ID)
 
 #---- CLASSES ----#
 class CommsInfo:
-    def __init__(self, listening_pipe_address, responder_pipe_address, channel):
+    def __init__(self, origin_pipe_address, destination_pipe_address, channel):
         """
         Initializes communication information.
         
@@ -85,13 +86,13 @@ class CommsInfo:
         - myId: The ID of this device.
         - channel: The communication channel.
         """
-        self.listening_pipe_address = listening_pipe_address
-        self.responder_pipe_address = responder_pipe_address
+        self.origin_pipe_address = origin_pipe_address
+        self.destination_pipe_address = destination_pipe_address
         self.channel = channel
     
     def __str__(self):
-        return f"CommsInfo(listening_pipe_address='{self.listening_pipe_address}', " \
-               f"responder_pipe_address='{self.responder_pipe_address}', " \
+        return f"CommsInfo(origin_pipe_address='{self.origin_pipe_address}', " \
+               f"destination_pipe_address='{self.destination_pipe_address}', " \
                f"channel='{self.channel}')"
 
 #---- VARIABLES GLOBALES ----#
@@ -130,7 +131,7 @@ def anySupplicant():
     
     Waits for a File Request Message. (<- FILE_REQUEST_MSG )
 
-    Actualize the value of the comms_info.responder_pipe_address with the adress of the transmitter.
+    Actualize the value of the comms_info.destination_pipe_address with the adress of the transmitter.
     
     Parameters:
     - comms_info: Communication information object.
@@ -151,17 +152,7 @@ def sendRequestAcc():
     """
     # Preparar y enviar un mensaje de confirmación de vuelta al transmisor
     print("Sending request accepted message...")
-
-    nrf.listen = False  # Dejar de escuchar para poder enviar
-    nrf.open_tx_pipe(comms_info.responder_pipe_address)
-    sent_successfully = nrf.send(MY_PIPE_ID+REQUEST_ACC_MSG)  # Enviar el mensaje de confirmación
-   
-    if sent_successfully:
-        print("Request Accepted Message sent successfully.")
-    else:
-        print("Failed to send Request Accepted Message.")
-   
-    nrf.listen = True  # Volver al modo de escucha después de enviar
+    send_message(comms_info, REQUEST_ACC_MSG, nrf)
 
 def anyTransmitAcc():
     """
@@ -220,20 +211,7 @@ def sendFileRequest():
     - comms_info: Communication information object.
     """
     print("Sending file request...")
-    print(f"Channel Information: {comms_info}")
-
-    nrf.listen = False  # Dejar de escuchar para poder enviar
-    nrf.open_tx_pipe(comms_info.responder_pipe_address)
-    data_to_send = MY_PIPE_ID+b": "+FILE_REQUEST_MSG
-    print(f"About to send: {data_to_send}")
-    sent_successfully = nrf.send(data_to_send)  # Enviar el mensaje de confirmación
-   
-    if sent_successfully:
-        print("Request Accepted Message sent successfully.")
-    else:
-        print("Failed to send Request Accepted Message.")
-   
-    nrf.listen = True  # Volver al modo de escucha después de enviar
+    send_message(comms_info, FILE_REQUEST_MSG, nrf)
 
 def anyCarrier():
     """
