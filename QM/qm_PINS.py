@@ -27,8 +27,6 @@ except ImportError:  # on CircuitPython only
     CE_PIN = DigitalInOut(board.D4)
     CSN_PIN = DigitalInOut(board.D5)
 
-#Cleanup per reiniciar
-GPIO.cleanup()
 # Initialize the leds
 GPIO.setmode(GPIO.BCM)
 # I CREATED VARIABLES FOR EASY READING
@@ -264,5 +262,7 @@ if __name__ == "__main__":
         print(" Keyboard Interrupt detected. Powering down radio...")
         nrf.power = False
         GPIO.cleanup()
+    finally: 
+        GPIO.cleanup()  # Cleanup GPIO resources before exiting    
 else:
     print("    Run slave() on receiver\n    Run master() on transmitter")
