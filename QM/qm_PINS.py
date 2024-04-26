@@ -219,6 +219,8 @@ def set_role():
     
     if switch_nm_state:  # If GPIO pin 3 is on
         print("Network mode selected.")
+        print("Switch NM state:", switch_nm_state)
+        print("Switch TXRX state:", switch_txrx_state)
         GPIO.output(NM_LED, GPIO.HIGH)
         return False  # Exit the function
     elif not switch_nm_state and switch_txrx_state:  # If GPIO pin 3 is off and GPIO pin 2 is on
@@ -237,6 +239,8 @@ def set_role():
         return True
     else:  # If neither GPIO pin 2 nor GPIO pin 3 is on
         print("Receiver role selected.")
+        print("Switch NM state:", switch_nm_state)
+        print("Switch TXRX state:", switch_txrx_state)
         slave()
         return True
 
