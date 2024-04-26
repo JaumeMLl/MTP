@@ -52,6 +52,8 @@ nrf = RF24(SPI_BUS, CSN_PIN, CE_PIN)
 nrf.pa_level = -12
 ## to enable the custom ACK payload feature
 nrf.ack = True  # False disables again
+# Set channel, from 1 to 125
+nrf.setChannel(80)
 
 # addresses needs to be in a buffer protocol object (bytearray)
 address = [b"1Node", b"2Node"]
@@ -205,9 +207,9 @@ def set_role():
 def set_role(): 
     """Set the role using GPIO switches."""
     # Switch 14 Tx or Rx
-    switch_14_state = GPIO.input(14)  # Read state of GPIO pin 14
+    switch_14_state = GPIO.input(2)  # Read state of GPIO pin 2
     # Swtich 24 NM or not
-    switch_24_state = GPIO.input(24)  # Read state of GPIO pin 24
+    switch_24_state = GPIO.input(3)  # Read state of GPIO pin 3
     
     if switch_24_state:  # If GPIO pin 24 is on
         print("Network mode selected.")
@@ -231,7 +233,8 @@ def set_role():
         slave()
         return True
 
-
+# Canviar l'ordre, primer espera al primer switch per si es network mode o no, després si NO es 
+# Network Mode 
 if __name__ == "__main__":
     print("Waiting for USB drive...")
     num_devices = 0

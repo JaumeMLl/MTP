@@ -59,7 +59,7 @@ Para el directorio del usb con permisos de escritura (y de lectura)
 
 >>>>>>> 0ee453c5ed5b5a67ecded36ce51ef372dba4969e
 
-# CANALS DE NRF2401
+# Canals de NRF2401
 Referència: https://lastminuteengineers.com/nrf24l01-arduino-wireless-communication/#rf-channel-frequency
 Hi ha una imatge on mostra el següent: 
 
