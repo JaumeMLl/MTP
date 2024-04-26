@@ -265,7 +265,5 @@ if __name__ == "__main__":
         print(" Keyboard Interrupt detected. Powering down radio...")
         nrf.power = False
         GPIO.cleanup()
-    finally: 
-        GPIO.cleanup()  # Cleanup GPIO resources before exiting    
 else:
     print("    Run slave() on receiver\n    Run master() on transmitter")
