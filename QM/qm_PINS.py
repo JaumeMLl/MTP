@@ -77,6 +77,15 @@ nrf.open_tx_pipe(address[0])  # always uses pipe 0
 # set RX address of TX node into an RX pipe
 nrf.open_rx_pipe(1, address[1])  # using pipe 1
 
+def reset_leds():
+    """Turn off all LEDs."""
+    GPIO.output(TRANSMITTER_LED, GPIO.LOW)
+    GPIO.output(RECEIVER_LED, GPIO.LOW)
+    GPIO.output(CONNECTION_LED, GPIO.LOW)
+    GPIO.output(NM_LED, GPIO.LOW)
+    GPIO.output(USB_LED, GPIO.LOW)
+
+
 def master(filelist, count=5):
     nrf.listen = False  # ensure the nRF24L01 is in TX mode
     GPIO.output(TRANSMITTER_LED, GPIO.HIGH)
@@ -265,5 +274,6 @@ if __name__ == "__main__":
         print(" Keyboard Interrupt detected. Powering down radio...")
         nrf.power = False
         GPIO.cleanup()
+        reset_leds()
 else:
     print("    Run slave() on receiver\n    Run master() on transmitter")
