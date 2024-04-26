@@ -5,6 +5,7 @@ from digitalio import DigitalInOut
 import os
 import subprocess
 import RPi.GPIO as GPIO
+import threading
 
 from circuitpython_nrf24l01.rf24 import RF24
 
@@ -71,6 +72,23 @@ radio_number = bool(
 )
 '''
 
+<<<<<<< HEAD
+=======
+# set TX address of RX node into the TX pipe
+nrf.open_tx_pipe(address[0])  # always uses pipe 0
+
+# set RX address of TX node into an RX pipe
+nrf.open_rx_pipe(1, address[1])  # using pipe 1
+
+
+def USB_led():
+    while True:
+        GPIO.output(USB_LED, GPIO.HIGH)
+        time.sleep(1)
+        GPIO.output(USB_LED, GPIO.LOW)
+        time.sleep(1)
+
+>>>>>>> 550d795 (led_thread)
 def reset_leds():
     """Turn off all LEDs."""
     GPIO.output(TRANSMITTER_LED, GPIO.LOW)
@@ -260,6 +278,9 @@ def set_role():
 # Network Mode 
 if __name__ == "__main__":
     print("Waiting for USB drive...")
+    # Start the USB LED thread
+    t = threading.Thread(target=USB_led)
+    t.start()
     num_devices = 0
     while num_devices < 2:
         df = subprocess.check_output("lsusb")
@@ -267,8 +288,8 @@ if __name__ == "__main__":
         num_devices = len(df)-1
         time.sleep(1)
     print("USB unit connected")
-    # Assumeixo que aquí ja ha trobat el USB
-    GPIO.output(USB_LED, GPIO.HIGH)    
+    # # Assumeixo que aquí ja ha trobat el USB
+    # GPIO.output(USB_LED, GPIO.HIGH)    
     try:
         while set_role():
             pass  # continue example until 'Q' is entered
