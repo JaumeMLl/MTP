@@ -35,11 +35,15 @@ RECEIVER_LED = 25
 CONNECTION_LED = 12
 NM_LED = 16
 USB_LED = 21
+NM_SWITCH = 2
+TXRX_SWITCH = 2
 GPIO.setup(TRANSMITTER_LED, GPIO.OUT)
 GPIO.setup(RECEIVER_LED, GPIO.OUT)
 GPIO.setup(CONNECTION_LED, GPIO.OUT)
 GPIO.setup(NM_LED, GPIO.OUT)
 GPIO.setup(USB_LED, GPIO.OUT)
+GPIO.setup(NM_SWITCH, GPIO.IN)
+GPIO.setup(TXRX_SWITCH, GPIO.IN)
 
 # initialize the nRF24L01 on the spi bus object
 nrf = RF24(SPI_BUS, CSN_PIN, CE_PIN)
@@ -206,16 +210,16 @@ def set_role():
 
 def set_role(): 
     """Set the role using GPIO switches."""
-    # Switch 14 Tx or Rx
-    switch_14_state = GPIO.input(2)  # Read state of GPIO pin 2
-    # Swtich 24 NM or not
-    switch_24_state = GPIO.input(3)  # Read state of GPIO pin 3
+    # Switch 2 Tx or Rx
+    switch_txrx_state = GPIO.input(TXRX_SWITCH)  # Read state of GPIO pin 2
+    # Swtich 3 NM or not
+    switch_nm_state = GPIO.input(NM_SWITCH)  # Read state of GPIO pin 3
     
-    if switch_24_state:  # If GPIO pin 24 is on
+    if switch_nm_state:  # If GPIO pin 3 is on
         print("Network mode selected.")
         GPIO.output(NM_LED, GPIO.HIGH)
         return False  # Exit the function
-    elif not switch_24_state and switch_14_state:  # If GPIO pin 24 is off and GPIO pin 14 is on
+    elif not switch_nm_state and switch_txrx_state:  # If GPIO pin 3 is off and GPIO pin 2 is on
         print("Transmitter role selected.")
         path = '/media/usb'  # Ruta completa al archivo en el directorio /mnt/usbdrive
         filelist = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
@@ -228,7 +232,7 @@ def set_role():
         master(filelist)
         return True
         
-    else:  # If neither GPIO pin 24 nor GPIO pin 14 is on
+    else:  # If neither GPIO pin 2 nor GPIO pin 3 is on
         print("Receiver role selected.")
         slave()
         return True
