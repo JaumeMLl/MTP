@@ -119,7 +119,6 @@ def anySupplicant():
     - True if FileRequestMesg is received, False otherwise.
     """
 
-    print(f"Channel Information: {comms_info}")
     return wait_for_desired_message(comms_info, FILE_REQUEST_MSG, TIMEOUT, nrf)
 
 def sendRequestAcc():
@@ -131,10 +130,7 @@ def sendRequestAcc():
     """
     # Preparar y enviar un mensaje de confirmación de vuelta al transmisor
     print("Sending request accepted message...")
-    send_message(comms_info, REQUEST_ACC_MSG, nrf)
-
-    nrf.open_rx_pipe(1, MY_PIPE_ID)
-    comms_info.listening_pipe_address = MY_PIPE_ID
+    send_message(comms_info.destination_pipe_address, REQUEST_ACC_MSG, nrf)
 
 def anyTransmitAcc():
     """
@@ -146,12 +142,7 @@ def anyTransmitAcc():
     Returns:
     - True if acknowledgment is received, False otherwise.
     """
-    r = True  # For testing purposes
-    if r:
-        print("Transmit Accepted Received")
-    else:
-        print("Transmit Accepted NOT Received")
-    return r  
+    return wait_for_desired_message(comms_info, TRANSMIT_ACC_MSG, TIMEOUT, nrf)
 
 def needToBackOff():
     """
@@ -178,7 +169,8 @@ def packageTransmission():
     Returns:
     - True if the package is transmitted successfully, False otherwise.
     """
-    r = True  # For testing purposes
+    r = False  # For testing purposes
+    print("TODO: QM here")
     if r:
         print("Package Transmission Accomplished")
     else:
@@ -193,7 +185,13 @@ def sendFileRequest():
     - comms_info: Communication information object.
     """
     print("Sending file request...")
-    send_message(comms_info, FILE_REQUEST_MSG, nrf)
+    r = send_message(comms_info.destination_pipe_address, FILE_REQUEST_MSG, nrf)
+    
+    if r:
+        print("Message Sent")
+    else:
+        print("Fail while sending message")
+    return r
 
 def anyCarrier():
     """
@@ -206,21 +204,23 @@ def anyCarrier():
     Returns:
     - True if a carrier signal is detected, False otherwise.
     """
-    r = False  # For testing purposes
-    if r:
-        print("Request Accepted Received")
-    else:
-        print("Carrier NOT Found")
-    return r  
+    return wait_for_desired_message(comms_info, REQUEST_ACC_MSG, TIMEOUT, nrf) 
 
 def sendTransmitionAccepted():
     """
-    Sends a transmission acceptance message to the sending device. (-> TransmitAccMsg)
+    Sends a transmission acceptance message to the sending device. (-> TRANSMIT_ACC_MSG)
     
     Parameters:
     - comms_info: Communication information object.
     """
     print("Sending transmission accepted message...")
+    r = send_message(comms_info.destination_pipe_address, TRANSMIT_ACC_MSG, nrf)
+    
+    if r:
+        print("Message Sent")
+    else:
+        print("Fail while sending message")
+    return r
 
 def packageReception():
     """
@@ -234,12 +234,13 @@ def packageReception():
     Returns:
     - True if the package is received successfully, False otherwise.
     """
-    r = True  # For testing purposes
+    r = False  # For testing purposes
+    print("TODO: QM here")
     if r:
-        print("Package Reception Accomplished")
+        print("Package Transmission Accomplished")
     else:
-        print("Package Reception Failed")
-    return r
+        print("Package Transmission Failed")
+    return r 
 
 # State Machine
 class StateMachine:
@@ -248,7 +249,8 @@ class StateMachine:
 
     def run(self):
         while True:
-            print("Current State:", self.state)
+            print(f"#---------CURRENT STATE: {self.state} ---------#")
+            print(f"Channel Information: {comms_info}")
             time.sleep(1)
             if self.state == "Check File State":
                 self.check_file_state()
@@ -279,8 +281,7 @@ class StateMachine:
         """
         Manages packet possession state and transitions accordingly.
         """
-        supplicantFlag = anySupplicant()
-        if supplicantFlag:
+        if anySupplicant():
             self.state = "Request Accepted State"
         else:
             self.state = "Packet Possession State"
@@ -290,8 +291,7 @@ class StateMachine:
         Manages request accepted state and transitions accordingly.
         """
         sendRequestAcc()
-        transmitAccFlag = anyTransmitAcc()
-        if transmitAccFlag:
+        if anyTransmitAcc():
             self.state = "Packet Transmission State"
         else:
             self.state = "Packet Possession State"
@@ -319,9 +319,8 @@ class StateMachine:
         Manages send request state and transitions accordingly.
         """
         carrierFlag = False
-        r = sendFileRequest()
 
-        if r:
+        if sendFileRequest():
             carrierFlag = anyCarrier()
         if carrierFlag:
                 self.state = "Transmit Confirmation State"
