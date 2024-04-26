@@ -82,10 +82,16 @@ nrf.open_rx_pipe(1, address[1])  # using pipe 1
 
 def USB_led():
     while True:
-        GPIO.output(USB_LED, GPIO.HIGH)
-        time.sleep(1)
-        GPIO.output(USB_LED, GPIO.LOW)
-        time.sleep(1)
+        df = subprocess.check_output("lsusb")
+        df = df.split(b'\n')
+        num_devices = len(df)-1
+        if num_devices < 2:
+            GPIO.output(USB_LED, GPIO.LOW)
+            time.sleep(0.5)
+        else:
+            GPIO.output(USB_LED, GPIO.HIGH)
+            time.sleep(0.5)
+
 
 def reset_leds():
     """Turn off all LEDs."""
