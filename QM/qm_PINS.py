@@ -106,6 +106,7 @@ def master(filelist, count=5):
             start_time = time.monotonic()  # Iniciar el temporizador
             while time.monotonic() - start_time < 5:  # Esperar hasta 5 segundos para recibir el ACK
                 if nrf.available():  # Verificar si hay un mensaje disponible
+                    GPIO.output(CONNECTION_LED, GPIO.HIGH)
                     received_payload = nrf.read()  # Leer el payload recibido
                     if received_payload == b'ACK':  # Si se recibe el ACK esperado
                         print("ACK received. Sending next chunk.")
@@ -123,7 +124,6 @@ def master(filelist, count=5):
             print("Failed to receive ACK after maximum attempts. Moving to the next chunk.")
             # Opcional: podrías elegir terminar el envío completamente aquí si es crítico
             # break
-
     print("Message transmission complete.")
     GPIO.output(TRANSMITTER_LED, GPIO.LOW)
 
@@ -136,6 +136,7 @@ def slave(timeout=6):
 
     while (time.monotonic() - start) < timeout:
         if nrf.available():
+            GPIO.output(CONNECTION_LED, GPIO.HIGH)
             received_payload = nrf.read()  # Leer el mensaje entrante
             print(f'Received payload: {received_payload}')
             message.append(received_payload)
@@ -222,6 +223,7 @@ def set_role():
         GPIO.output(NM_LED, GPIO.HIGH)
         return False  # Exit the function
     elif not switch_nm_state and switch_txrx_state:  # If GPIO pin 3 is off and GPIO pin 2 is on
+        GPIO.output(NM_LED, GPIO.LOW)
         print("Transmitter role selected.")
         print("Switch NM state:", switch_nm_state)
         print("Switch TXRX state:", switch_txrx_state)
@@ -236,6 +238,7 @@ def set_role():
         master(filelist)
         return True
     else:  # If neither GPIO pin 2 nor GPIO pin 3 is on
+        GPIO.output(NM_LED, GPIO.LOW)
         print("Receiver role selected.")
         print("Switch NM state:", switch_nm_state)
         print("Switch TXRX state:", switch_txrx_state)
