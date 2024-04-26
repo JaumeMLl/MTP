@@ -106,17 +106,13 @@ def reset_leds():
 def master(filelist, count=5):
     nrf.listen = False  # ensure the nRF24L01 is in TX mode
     GPIO.output(TRANSMITTER_LED, GPIO.HIGH)
-
-    #with open(filepath, 'r') as file:
-    #    message = file.read().encode()
-    
-    ## TODO: fix this. It is not working
-    # message = b''
-    # for filepath in filelist:
-    #     file = open(filepath,'rb')
-    #     message += file.read()
     
     filepath = filelist[0]
+    
+    # Compress the file using zip
+    os.system(f"zip -j {filepath}.zip {filepath}")
+    filepath = filepath + ".zip"
+    
     # This line stores the filename in the message
     message = open(filepath, 'rb').read() + b'separaciofitxer' + bytes(filepath.split('/')[-1], 'utf-8')
 
@@ -126,11 +122,13 @@ def master(filelist, count=5):
         attempt = 0
         while attempt < count:
             print(f"Sending chunk: {chunk}")
+            # Show percentage of message sent
+            print(f"Percentage of message sent: {round((chunks.index(chunk)+1)/len(chunks)*100, 2)}%")
             nrf.send(chunk)  # Enviar el chunk
             nrf.listen = True  # Cambiar al modo RX para esperar el ACK
 
             start_time = time.monotonic()  # Iniciar el temporizador
-            while time.monotonic() - start_time < 5:  # Esperar hasta 5 segundos para recibir el ACK
+            while time.monotonic() - start_time < 50:  # Esperar hasta 5 segundos para recibir el ACK
                 if nrf.available():  # Verificar si hay un mensaje disponible
                     GPIO.output(CONNECTION_LED, GPIO.HIGH)
                     received_payload = nrf.read()  # Leer el payload recibido
@@ -151,10 +149,11 @@ def master(filelist, count=5):
             # Opcional: podrías elegir terminar el envío completamente aquí si es crítico
             # break
     print("Message transmission complete.")
+    nrf.listen=False 
     GPIO.output(TRANSMITTER_LED, GPIO.LOW)
 
 
-def slave(timeout=100):
+def slave(timeout=10):
     nrf.listen = True  # put radio into RX mode and power up
     GPIO.output(RECEIVER_LED, GPIO.HIGH)
     message = []  # list to accumulate message chunks
@@ -179,6 +178,7 @@ def slave(timeout=100):
 
             nrf.listen = True  # Volver al modo de escucha después de enviar
             start = time.monotonic()  # Restablecer el temporizador
+            
 
     # Concatenar y procesar el mensaje completo recibido, si es necesario
     complete_message = b''.join(message)
@@ -190,6 +190,8 @@ def slave(timeout=100):
     complete_message = complete_message[:-long_desc]
     with open(filename, 'wb') as file:
         file.write(complete_message)
+    # Extarct the file
+    os.system(f"unzip -j {filename} -d .")
 
     print("Received message stored in",filename)
     GPIO.output(RECEIVER_LED, GPIO.LOW)
@@ -198,6 +200,8 @@ def slave(timeout=100):
     try:
         with open('/media/usb/'+filename, 'wb') as file:
             file.write(complete_message)
+            # Extarct the file
+            os.system(f"unzip -j /media/usb/{filename} -d /media/usb/")
         print("Received message also stored in '/media/usb/'",filename)
     except Exception as e:
         print(f"Failed to save the message in '/media/usb'. Error: {e}")
@@ -297,8 +301,7 @@ if __name__ == "__main__":
     # # Assumeixo que aquí ja ha trobat el USB
     # GPIO.output(USB_LED, GPIO.HIGH)    
     try:
-        while set_role():
-            pass  # continue example until 'Q' is entered
+        set_role()
     except KeyboardInterrupt:
         print(" Keyboard Interrupt detected. Powering down radio...")
         nrf.power = False
