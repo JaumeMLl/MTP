@@ -27,6 +27,8 @@ except ImportError:  # on CircuitPython only
     CE_PIN = DigitalInOut(board.D4)
     CSN_PIN = DigitalInOut(board.D5)
 
+#Cleanup per reiniciar
+GPIO.cleanup()
 # Initialize the leds
 GPIO.setmode(GPIO.BCM)
 # I CREATED VARIABLES FOR EASY READING
@@ -241,7 +243,6 @@ def set_role():
 # Canviar l'ordre, primer espera al primer switch per si es network mode o no, després si NO es 
 # Network Mode 
 if __name__ == "__main__":
-    GPIO.cleanup()
     print("Waiting for USB drive...")
     num_devices = 0
     while num_devices < 2:
