@@ -6,6 +6,7 @@ import os
 import subprocess
 import RPi.GPIO as GPIO
 import threading
+import numpy as np
 
 from circuitpython_nrf24l01.rf24 import RF24
 
@@ -108,7 +109,7 @@ def master(filelist, count=5):
     #     file = open(filepath,'rb')
     #     message += file.read()
     
-    filepath = filelist[-1]
+    filepath = filelist[0]
     # This line stores the filename in the message
     message = open(filepath, 'rb').read() + b'separaciofitxer' + bytes(filepath.split('/')[-1], 'utf-8')
 
@@ -246,7 +247,8 @@ def set_role():
         print("Switch NM state:", switch_nm_state)
         print("Switch TXRX state:", switch_txrx_state)
         path = '/media/usb'  # Ruta completa al archivo en el directorio /mnt/usbdrive
-        filelist = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+        filelist = np.array([os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]) # Get the list of files in the directory
+        filelist = filelist[np.where([x.endswith(".txt") and not x.startswith(".") for x in filelist])[0]] # Get the elements that end with ".txt" and does not start with "."
         if not os.path.exists(path):
             print(f"Path not found: {path}")
             return True
