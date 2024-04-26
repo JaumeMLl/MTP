@@ -151,6 +151,24 @@ def needToBackOff():
     Returns:
     - True if backoff is needed, False otherwise.
     """
+    while (time.monotonic() - start) < TIMEOUT:
+        if nrf.available():
+            # Read the received message
+            received_message = []
+            received_message = nrf.read()
+            print(f"Received Message: {received_message}")
+            # Extract the responder ID and the actual message from the received message
+            comms_info.destination_pipe_address = received_message[:5]
+            actual_message = received_message[5+2:]  # Skip 5 bytes for responder ID and 2 bytes for separator ": "
+
+            # Check if the responder ID matches and the actual message is the desired one
+            if actual_message == desired_message:
+                print("Message received")
+                return True  # Message received successfully
+            else:
+                print("Message not recognized")
+        time.sleep(0.1)  # Wait for a short time before checking again
+    
     r = False  # For testing purposes
     if r:
         print("Need To Back Off")
