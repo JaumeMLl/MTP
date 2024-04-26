@@ -71,12 +71,6 @@ radio_number = bool(
 )
 '''
 
-# set TX address of RX node into the TX pipe
-nrf.open_tx_pipe(address[0])  # always uses pipe 0
-
-# set RX address of TX node into an RX pipe
-nrf.open_rx_pipe(1, address[1])  # using pipe 1
-
 def reset_leds():
     """Turn off all LEDs."""
     GPIO.output(TRANSMITTER_LED, GPIO.LOW)
@@ -236,6 +230,10 @@ def set_role():
         print("Transmitter role selected.")
         print("Switch NM state:", switch_nm_state)
         print("Switch TXRX state:", switch_txrx_state)
+        # set TX address of RX node into the TX pipe
+        nrf.open_tx_pipe(address[0])  # always uses pipe 0
+        # set RX address of TX node into an RX pipe
+        nrf.open_rx_pipe(1, address[1])  # using pipe 1
         path = '/media/usb'  # Ruta completa al archivo en el directorio /mnt/usbdrive
         filelist = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
         if not os.path.exists(path):
@@ -251,6 +249,10 @@ def set_role():
         print("Receiver role selected.")
         print("Switch NM state:", switch_nm_state)
         print("Switch TXRX state:", switch_txrx_state)
+        # set TX address of RX node into the TX pipe
+        nrf.open_tx_pipe(address[1])  # always uses pipe 1
+        # set RX address of TX node into an RX pipe
+        nrf.open_rx_pipe(1, address[0])  # using pipe 0
         slave()
         return True
 
