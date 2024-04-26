@@ -221,6 +221,8 @@ def set_role():
         return False  # Exit the function
     elif not switch_nm_state and switch_txrx_state:  # If GPIO pin 3 is off and GPIO pin 2 is on
         print("Transmitter role selected.")
+        print("Switch NM state:", switch_nm_state)
+        print("Switch TXRX state:", switch_txrx_state)
         path = '/media/usb'  # Ruta completa al archivo en el directorio /mnt/usbdrive
         filelist = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
         if not os.path.exists(path):
@@ -231,7 +233,6 @@ def set_role():
             return True        
         master(filelist)
         return True
-        
     else:  # If neither GPIO pin 2 nor GPIO pin 3 is on
         print("Receiver role selected.")
         slave()
@@ -240,6 +241,7 @@ def set_role():
 # Canviar l'ordre, primer espera al primer switch per si es network mode o no, després si NO es 
 # Network Mode 
 if __name__ == "__main__":
+    GPIO.cleanup()
     print("Waiting for USB drive...")
     num_devices = 0
     while num_devices < 2:
