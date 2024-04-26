@@ -9,31 +9,10 @@ import board
 from digitalio import DigitalInOut
 import subprocess
 
-from CommsMethods import wait_for_desired_message
-from CommsMethods import send_message
+from CommsMethods import *
+from Constants_Network_Mode import *
 
 from circuitpython_nrf24l01.rf24 import RF24
-
-#---- CONSTANTS ----#
-# Team A IDs
-TEAM_A1 = b"pipA1"
-TEAM_A2 = b"pipB1"
-TEAM_B1 = b"pipB2"
-TEAM_B2 = b"pipA2"
-TEAM_C1 = b"pipC1"
-TEAM_C2 = b"pipC2"
-
-
-TIMEOUT = 10
-CHANNEL1 = 1
-CHANNEL2 = 2
-
-MY_PIPE_ID = TEAM_A1
-BROADCAST_ID = b"Bcast"
-
-FILE_REQUEST_MSG = b"FileRequestMsg"
-REQUEST_ACC_MSG = b"RequestAcceptanceMsg"
-TransmitAccMsg = b"TransmitAccMsg"
 
 #---- CONFIG ----#
 
@@ -77,7 +56,7 @@ nrf.open_rx_pipe(1, BROADCAST_ID)
 
 #---- CLASSES ----#
 class CommsInfo:
-    def __init__(self, origin_pipe_address, destination_pipe_address, channel):
+    def __init__(self, listening_pipe_address, destination_pipe_address, channel):
         """
         Initializes communication information.
         
@@ -86,14 +65,14 @@ class CommsInfo:
         - myId: The ID of this device.
         - channel: The communication channel.
         """
-        self.origin_pipe_address = origin_pipe_address
+        self.listening_pipe_address = listening_pipe_address
         self.destination_pipe_address = destination_pipe_address
         self.channel = channel
     
     def __str__(self):
-        return f"CommsInfo(origin_pipe_address='{self.origin_pipe_address}', " \
-               f"destination_pipe_address='{self.destination_pipe_address}', " \
-               f"channel='{self.channel}')"
+        return f"Listening Pipe: '{self.listening_pipe_address}', " \
+               f"Destination Pipe: '{self.destination_pipe_address}', " \
+               f"Channel='{self.channel}'"
 
 #---- VARIABLES GLOBALES ----#
 comms_info = CommsInfo(BROADCAST_ID, BROADCAST_ID, CHANNEL1)
@@ -153,6 +132,9 @@ def sendRequestAcc():
     # Preparar y enviar un mensaje de confirmación de vuelta al transmisor
     print("Sending request accepted message...")
     send_message(comms_info, REQUEST_ACC_MSG, nrf)
+
+    nrf.open_rx_pipe(1, MY_PIPE_ID)
+    comms_info.listening_pipe_address = MY_PIPE_ID
 
 def anyTransmitAcc():
     """
