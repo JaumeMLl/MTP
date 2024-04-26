@@ -53,7 +53,7 @@ nrf.pa_level = -12
 ## to enable the custom ACK payload feature
 nrf.ack = True  # False disables again
 # Set channel, from 1 to 125
-nrf.setChannel(80)
+# nrf.setChannel(80)
 
 # addresses needs to be in a buffer protocol object (bytearray)
 address = [b"1Node", b"2Node"]
