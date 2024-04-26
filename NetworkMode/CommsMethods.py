@@ -1,11 +1,12 @@
 import time
+from Constants_Network_Mode import *
 
 def wait_for_desired_message(comms_info, desired_message, timeout, nrf):
     """
     Waits until it receives the message matching the desired value on the given pipe, or until the timeout_ms expires.
     
     Parameters:
-    - origin_pipe_address: The pipe being listened to for incoming messages.
+    - listening_pipe_address: The pipe being listened to for incoming messages.
     - destination_pipe_address: The pipe where the response should be sent.
     - desired_message: The specific message expected to be received.
     - timeout: Timeout period in seconds.
@@ -13,7 +14,7 @@ def wait_for_desired_message(comms_info, desired_message, timeout, nrf):
     Returns:
     - True if the desired_message is received within the timeout period, False otherwise.
     """
-    nrf.open_rx_pipe(1, comms_info.origin_pipe_address)
+    nrf.open_rx_pipe(1, comms_info.listening_pipe_address)
     nrf.listen = True  # put radio into RX mode and power up
 
     start = time.monotonic()
@@ -44,7 +45,7 @@ def send_message(comms_info, message, nrf):
 
     nrf.listen = False  # Dejar de escuchar para poder enviar
     nrf.open_tx_pipe(comms_info.destination_pipe_address)
-    data_to_send = comms_info.origin_pipe_address+b": "+ message
+    data_to_send = MY_PIPE_ID+b": "+ message
     print(f"About to send: {data_to_send}")
     sent_successfully = nrf.send(data_to_send)  # Enviar el mensaje de confirmación
    
