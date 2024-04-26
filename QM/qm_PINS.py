@@ -137,7 +137,7 @@ def master(filelist, count=5):
     GPIO.output(TRANSMITTER_LED, GPIO.LOW)
 
 
-def slave(timeout=6):
+def slave(timeout=100):
     nrf.listen = True  # put radio into RX mode and power up
     GPIO.output(RECEIVER_LED, GPIO.HIGH)
     message = []  # list to accumulate message chunks
