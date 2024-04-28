@@ -102,6 +102,7 @@ def ledOn():
     """
     Simulates turning on an LED (for demonstration purposes).
     """
+    # TODO implement this function
     print("Turning LED on...")
 
 def anySupplicant():
@@ -130,6 +131,7 @@ def sendRequestAcc():
     """
     # Preparar y enviar un mensaje de confirmación de vuelta al transmisor
     print("Sending request accepted message...")
+    time.sleep(random.randint(0, REQUEST_ACC_RANDOM_WAIT))  # Wait a random amount of seconds
     send_message(comms_info.destination_pipe_address, REQUEST_ACC_MSG, nrf)
 
 def anyTransmitAcc():
@@ -151,30 +153,17 @@ def needToBackOff():
     Returns:
     - True if backoff is needed, False otherwise.
     """
-    while (time.monotonic() - start) < TIMEOUT:
-        if nrf.available():
-            # Read the received message
-            received_message = []
-            received_message = nrf.read()
-            print(f"Received Message: {received_message}")
-            # Extract the responder ID and the actual message from the received message
-            comms_info.destination_pipe_address = received_message[:5]
-            actual_message = received_message[5+2:]  # Skip 5 bytes for responder ID and 2 bytes for separator ": "
+    nrf.listen = True  # put radio into RX mode and power up
 
-            # Check if the responder ID matches and the actual message is the desired one
-            if actual_message == desired_message:
-                print("Message received")
-                return True  # Message received successfully
-            else:
-                print("Message not recognized")
-        time.sleep(0.1)  # Wait for a short time before checking again
+    start = time.monotonic()
+    for count in range(BACK_OFF_COUNT):
+        if nrf.available():
+            print("Need To Back Off")
+            time.sleep(BACK_OFF_TIME)  # Wait for a short time before checking again
+        else:
+            return False
     
-    r = False  # For testing purposes
-    if r:
-        print("Need To Back Off")
-    else:
-        print("NO Need To Back Off")
-    return r
+    return True
 
 def packageTransmission():
     """
@@ -187,13 +176,15 @@ def packageTransmission():
     Returns:
     - True if the package is transmitted successfully, False otherwise.
     """
-    r = False  # For testing purposes
-    print("TODO: QM here")
-    if r:
-        print("Package Transmission Accomplished")
-    else:
-        print("Package Transmission Failed")
-    return r 
+    path = '/media/usb'  # Ruta completa al archivo en el directorio /mnt/usbdrive
+    filelist = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+    if not os.path.exists(path):
+        print(f"Path not found: {path}")
+        return True
+    if len(filelist) == 0:
+        print(f"No files in: {path}")
+        return True
+    transmitter(filelist, TRANSMIT_ATTEMPTS)
 
 def sendFileRequest():
     """
@@ -203,6 +194,7 @@ def sendFileRequest():
     - comms_info: Communication information object.
     """
     print("Sending file request...")
+    time.sleep(random.randint(0, FILE_REQUEST_RANDOM_WAIT))  # Wait a random amount of seconds
     r = send_message(comms_info.destination_pipe_address, FILE_REQUEST_MSG, nrf)
     
     if r:
@@ -252,13 +244,7 @@ def packageReception():
     Returns:
     - True if the package is received successfully, False otherwise.
     """
-    r = False  # For testing purposes
-    print("TODO: QM here")
-    if r:
-        print("Package Transmission Accomplished")
-    else:
-        print("Package Transmission Failed")
-    return r 
+    receiver(comms_info, TIMEOUT)
 
 # State Machine
 class StateMachine:
@@ -318,18 +304,13 @@ class StateMachine:
         """
         Manages packet transmission state and transitions accordingly.
         """
-        exit = False
-        i = 0
-        while needToBackOff() or exit:
-            # do nothing
-            if i >= TIMEOUT:
-                exit = True
-            i += 1
-        if not exit:
-            comms_info.channel = CHANNEL2
+        comms_info.channel = CHANNEL2
+        if not needToBackOff():
             packageTransmittedFlag = packageTransmission()
             print("Packet Sent Correctly:", packageTransmittedFlag)
-            comms_info.channel = CHANNEL1
+        
+        comms_info.channel = CHANNEL1
+        # TODO set channel to CHANNEL1
         self.state = "Packet Possession State"
 
     def send_request_state(self):
