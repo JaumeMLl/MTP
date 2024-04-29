@@ -133,7 +133,7 @@ def sendRequestAcc():
     # Preparar y enviar un mensaje de confirmación de vuelta al transmisor
     time.sleep(random.randint(0, REQUEST_ACC_RANDOM_WAIT))  # Wait a random amount of seconds
     print("Sending request accepted message...")
-    send_message(comms_info.destination_pipe_address, REQUEST_ACC_MSG, nrf)
+    return send_message(comms_info.destination_pipe_address, REQUEST_ACC_MSG, nrf)
 
 def anyTransmitAcc():
     """
@@ -253,7 +253,7 @@ class StateMachine:
 
     def run(self):
         while True:
-            print(f"\n\n#---------CURRENT STATE: {self.state} ---------#")
+            print(f"\n\n#--------- CURRENT STATE: {self.state} ---------#")
             print(f"Channel Information: {comms_info}")
             time.sleep(1)
             if self.state == "Check File State":
@@ -303,17 +303,22 @@ class StateMachine:
         """
         Manages request accepted state and transitions accordingly.
         """
-        sendRequestAcc() # TODO hacer que si devuelve false nos vamos a packet Possession directos
-        if anyTransmitAcc():
-            # Las pipes ya estan bien definidas
-            comms_info.channel = CHANNEL2
-            nrf.channel = CHANNEL2
-            self.state = "Packet Transmission State"
-        else:
+        if not sendRequestAcc():
             comms_info.listening_pipe_address = BROADCAST_ID
             comms_info.destination_pipe_address = BROADCAST_ID
             set_pipes(comms_info, nrf)
             self.state = "Packet Possession State"
+        else:
+            if anyTransmitAcc():
+                # Las pipes ya estan bien definidas
+                comms_info.channel = CHANNEL2
+                nrf.channel = CHANNEL2
+                self.state = "Packet Transmission State"
+            else:
+                comms_info.listening_pipe_address = BROADCAST_ID
+                comms_info.destination_pipe_address = BROADCAST_ID
+                set_pipes(comms_info, nrf)
+                self.state = "Packet Possession State"
 
     def packet_transmission_state(self):
         """

@@ -60,7 +60,8 @@ def send_message(destination_pipe_address, message, nrf):
 
 def transmitter(comms_info, filelist, count, nrf):
     #TODO set channel
-    
+    # TODO escapar del ack True. No entrar en bucle
+
     # set TX address of RX node into the TX pipe
     nrf.open_tx_pipe(comms_info.destination_pipe_address)
 
