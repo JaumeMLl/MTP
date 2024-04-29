@@ -55,7 +55,7 @@ nrf = RF24(SPI_BUS, CSN_PIN, CE_PIN)
 #                21 = bus 2, CE1  # enable SPI bus 1 prior to running this
 
 # Change the Power Amplifier level
-nrf.pa_level = -12
+nrf.pa_level = 0 # -12, -18
 ## to enable the custom ACK payload feature
 nrf.ack = True  # False disables again
 # Set channel, from 1 to 125
@@ -103,7 +103,7 @@ def reset_leds():
     GPIO.output(USB_LED, GPIO.LOW)
 
 
-def master(filelist, count=5):
+def master(filelist, count=500):
     nrf.listen = False  # ensure the nRF24L01 is in TX mode
     GPIO.output(TRANSMITTER_LED, GPIO.HIGH)
     
@@ -113,30 +113,34 @@ def master(filelist, count=5):
     # os.system(f"zip -j {filepath}.zip {filepath}")
     # filepath = filepath + ".zip"
     
-    # Compress the file using 7z
-    os.system(f"yes | 7z a {filepath}.7z {filepath}")
-    filepath = filepath + ".7z"
+    # # Compress the file using 7z
+    # os.system(f"yes | 7z a {filepath}.7z {filepath}")
+    # filepath = filepath + ".7z"
     
     # This line stores the filename in the message
     message = open(filepath, 'rb').read() + b'separaciofitxer' + bytes(filepath.split('/')[-1], 'utf-8')
 
-    chunks = [message[i:i + 32] for i in range(0, len(message), 32)]
+    chunks = [message[i:i + 31] for i in range(0, len(message), 31)]
 
     for chunk in chunks:
         attempt = 0
+        packet_ID = 0 # We only have 1 byte for the packet ID
         while attempt < count:
-            # print(f"Sending chunk: {chunk}")
             # Show percentage of message sent
-            print(f"Percentage of message sent: {round((chunks.index(chunk)+1)/len(chunks)*100, 2)}%")
+            # print(f"Percentage of message sent: {round((chunks.index(chunk)+1)/len(chunks)*100, 2)}%")
+            # Append the packet ID to the end of the chunk
+            chunk = chunk + bytes([packet_ID])
+            print(f"Sending chunk: {chunk} with packet ID: {packet_ID}")
+            print("Length of chunk:", len(chunk))
             nrf.send(chunk)  # Enviar el chunk
             nrf.listen = True  # Cambiar al modo RX para esperar el ACK
 
             start_time = time.monotonic()  # Iniciar el temporizador
-            while time.monotonic() - start_time < 2: # Esperar hasta 5 segundos para recibir el ACK
+            while time.monotonic() - start_time < 5: # Esperar hasta 5 segundos para recibir el ACK
                 if nrf.available():  # Verificar si hay un mensaje disponible
                     GPIO.output(CONNECTION_LED, GPIO.HIGH)
                     received_payload = nrf.read()  # Leer el payload recibido
-                    if received_payload == b'ACK':  # Si se recibe el ACK esperado
+                    if received_payload == bytes(packet_ID):  # Si se recibe el ACK esperado
                         print("ACK received. Sending next chunk.")
                         attempt = count  # Salir del bucle de reintento
                         break  # Salir del bucle de espera
@@ -148,6 +152,10 @@ def master(filelist, count=5):
                 print("No ACK received. Retrying...")
             attempt += 1
 
+        if packet_ID >= 255:
+            packet_ID = 0
+        else:
+            packet_ID += 1
         if attempt == count:  # Si se agotaron los intentos sin recibir ACK
             print("Failed to receive ACK after maximum attempts. Moving to the next chunk.")
             # Opcional: podrías elegir terminar el envío completamente aquí si es crítico
@@ -170,6 +178,7 @@ def slave(timeout=1000):
     message = []  # list to accumulate message chunks
     start = time.monotonic()
 
+    last_packet_ID = -1
     print("Waiting for incoming message...")
     while (time.monotonic() - start) < timeout:
         if nrf.available():
@@ -181,10 +190,20 @@ def slave(timeout=1000):
                 break
             else:
                 # print(f'Received payload: {received_payload}')
-                message.append(received_payload)
+                # Extract the last two bits of the received_payload, this is the packet ID (int)
+                packet_ID = int(received_payload[-1])
+                # Remove the packet ID from the received_payload
+                received_payload = received_payload[:-1]
+                print(f"Packet ID: {packet_ID}")
+                if packet_ID == last_packet_ID:
+                    print("Repeated packet. Discarding...")
+                    continue
+                else:
+                    last_packet_ID = packet_ID
+                    message.append(received_payload)
 
             # Preparar y enviar un mensaje de confirmación de vuelta al transmisor
-            ack_payload = b'ACK'  # Mensaje de confirmación
+            ack_payload = bytes(packet_ID)#b'ACK'  # Mensaje de confirmación
             nrf.listen = False  # Dejar de escuchar para poder enviar
             sent_successfully = nrf.send(ack_payload)  # Enviar el mensaje de confirmación
 
@@ -208,9 +227,9 @@ def slave(timeout=1000):
     with open(filename, 'wb') as file:
         file.write(complete_message)
     
-    # # Extarct the zip file
-    # os.system(f"unzip -j {filename} -d .")
-    os.system(f"yes | 7z x {filename} -o.")
+    # # # Extract the zip file
+    # # os.system(f"unzip -j {filename} -d .")
+    # os.system(f"yes | 7z x {filename} -o.")
 
     print("Received message stored in",filename)
     GPIO.output(RECEIVER_LED, GPIO.LOW)
@@ -219,10 +238,10 @@ def slave(timeout=1000):
     try:
         with open('/media/usb/'+filename, 'wb') as file:
             file.write(complete_message)
-            # # Extarct the zip file
-            # os.system(f"unzip -j /media/usb/{filename} -d /media/usb/")
-            # Extarct the 7z file
-            os.system(f"yes | 7z x /media/usb/{filename} -o/media/usb/")
+            # # # Extract the zip file
+            # # os.system(f"unzip -j /media/usb/{filename} -d /media/usb/")
+            # # Extract the 7z file
+            # os.system(f"yes | 7z x /media/usb/{filename} -o/media/usb/")
         print("Received message also stored in '/media/usb/'",filename)
     except Exception as e:
         print(f"Failed to save the message in '/media/usb'. Error: {e}")
