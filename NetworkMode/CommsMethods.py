@@ -1,6 +1,10 @@
 import time
 from Constants_Network_Mode import *
 
+def set_pipes(comms_info, nrf):
+    nrf.open_rx_pipe(1, comms_info.listening_pipe_address)
+    nrf.open_tx_pipe(comms_info.destination_pipe_address)
+
 def wait_for_desired_message(comms_info, desired_message, timeout, nrf):
     """
     Waits until it receives the message matching the desired value on the given pipe, or until the timeout_ms expires.
@@ -14,7 +18,6 @@ def wait_for_desired_message(comms_info, desired_message, timeout, nrf):
     Returns:
     - True if the desired_message is received within the timeout period, False otherwise.
     """
-    nrf.open_rx_pipe(1, comms_info.listening_pipe_address)
     nrf.listen = True  # put radio into RX mode and power up
 
     start = time.monotonic()
@@ -32,7 +35,7 @@ def wait_for_desired_message(comms_info, desired_message, timeout, nrf):
             if actual_message == desired_message:
                 print(f"Desired Message {desired_message} received")
                 # Extract the responder ID and the actual message from the received message
-                comms_info.destination_pipe_address = received_message[:5]
+                comms_info.destination_pipe_address = bytes(received_message[:5])
                 return True  # Message received successfully
             else:
                 print("Message not recognized")
@@ -55,7 +58,7 @@ def send_message(destination_pipe_address, message, nrf):
         print(f"Failed to send {message}.")
         return False
 
-def transmitter(comms_info, filelist, count):
+def transmitter(comms_info, filelist, count, nrf):
     #TODO set channel
     
     # set TX address of RX node into the TX pipe
@@ -64,8 +67,8 @@ def transmitter(comms_info, filelist, count):
     # set RX address of TX node into an RX pipe
     nrf.open_rx_pipe(1, comms_info.listening_pipe_address)
 
+    nrf.ack = True
     nrf.listen = False  # ensure the nRF24L01 is in TX mode
-
     #with open(filepath, 'r') as file:
     #    message = file.read().encode()
     
@@ -109,9 +112,13 @@ def transmitter(comms_info, filelist, count):
             # Opcional: podrías elegir terminar el envío completamente aquí si es crítico
             # break
 
+    nrf.ack = False
     print("Message transmission complete.")
 
-def receiver(comms_info, timeout):
+def receiver(comms_info, timeout, nrf):
+    #TODO hacer el receiver
+    nrf.ack = True
+
     # set TX address of RX node into the TX pipe
     nrf.open_tx_pipe(comms_info.destination_pipe_address)
 
@@ -153,6 +160,7 @@ def receiver(comms_info, timeout):
     with open(filename, 'wb') as file:
         file.write(complete_message)
 
+    nrf.ack = False
     print("Received message stored in",filename)
 
     # Guardar también el mensaje completo en un archivo en /mnt/usbdrive
