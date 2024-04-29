@@ -109,9 +109,13 @@ def master(filelist, count=5):
     
     filepath = filelist[0]
     
-    # Compress the file using zip
-    os.system(f"zip -j {filepath}.zip {filepath}")
-    filepath = filepath + ".zip"
+    # # Compress the file using zip
+    # os.system(f"zip -j {filepath}.zip {filepath}")
+    # filepath = filepath + ".zip"
+    
+    # Compress the file using 7z
+    os.system(f"yes | 7z a {filepath}.7z {filepath}")
+    filepath = filepath + ".7z"
     
     # This line stores the filename in the message
     message = open(filepath, 'rb').read() + b'separaciofitxer' + bytes(filepath.split('/')[-1], 'utf-8')
@@ -121,14 +125,14 @@ def master(filelist, count=5):
     for chunk in chunks:
         attempt = 0
         while attempt < count:
-            print(f"Sending chunk: {chunk}")
+            # print(f"Sending chunk: {chunk}")
             # Show percentage of message sent
             print(f"Percentage of message sent: {round((chunks.index(chunk)+1)/len(chunks)*100, 2)}%")
             nrf.send(chunk)  # Enviar el chunk
             nrf.listen = True  # Cambiar al modo RX para esperar el ACK
 
             start_time = time.monotonic()  # Iniciar el temporizador
-            while time.monotonic() - start_time < 50:  # Esperar hasta 5 segundos para recibir el ACK
+            while time.monotonic() - start_time < 2: # Esperar hasta 5 segundos para recibir el ACK
                 if nrf.available():  # Verificar si hay un mensaje disponible
                     GPIO.output(CONNECTION_LED, GPIO.HIGH)
                     received_payload = nrf.read()  # Leer el payload recibido
@@ -149,22 +153,35 @@ def master(filelist, count=5):
             # Opcional: podrías elegir terminar el envío completamente aquí si es crítico
             # break
     print("Message transmission complete.")
-    nrf.listen=False 
+    ack_payload = b'OK'  # Mensaje de finalización
+    nrf.listen = False  # Dejar de escuchar para poder enviar
+    sent_successfully = nrf.send(ack_payload)  # Enviar el mensaje de confirmación
+    if sent_successfully:
+        print("Confirmation message sent successfully.")
+    else:
+        print("Failed to send confirmation message.")
+        nrf.send(ack_payload)
     GPIO.output(TRANSMITTER_LED, GPIO.LOW)
 
 
-def slave(timeout=10):
+def slave(timeout=1000):
     nrf.listen = True  # put radio into RX mode and power up
     GPIO.output(RECEIVER_LED, GPIO.HIGH)
     message = []  # list to accumulate message chunks
     start = time.monotonic()
 
+    print("Waiting for incoming message...")
     while (time.monotonic() - start) < timeout:
         if nrf.available():
             GPIO.output(CONNECTION_LED, GPIO.HIGH)
             received_payload = nrf.read()  # Leer el mensaje entrante
-            print(f'Received payload: {received_payload}')
-            message.append(received_payload)
+            if received_payload == b'OK':
+                # Mensaje transmission complete
+                print("Message transmission complete.")
+                break
+            else:
+                # print(f'Received payload: {received_payload}')
+                message.append(received_payload)
 
             # Preparar y enviar un mensaje de confirmación de vuelta al transmisor
             ack_payload = b'ACK'  # Mensaje de confirmación
@@ -190,8 +207,10 @@ def slave(timeout=10):
     complete_message = complete_message[:-long_desc]
     with open(filename, 'wb') as file:
         file.write(complete_message)
-    # Extarct the file
-    os.system(f"unzip -j {filename} -d .")
+    
+    # # Extarct the zip file
+    # os.system(f"unzip -j {filename} -d .")
+    os.system(f"yes | 7z x {filename} -o.")
 
     print("Received message stored in",filename)
     GPIO.output(RECEIVER_LED, GPIO.LOW)
@@ -200,8 +219,10 @@ def slave(timeout=10):
     try:
         with open('/media/usb/'+filename, 'wb') as file:
             file.write(complete_message)
-            # Extarct the file
-            os.system(f"unzip -j /media/usb/{filename} -d /media/usb/")
+            # # Extarct the zip file
+            # os.system(f"unzip -j /media/usb/{filename} -d /media/usb/")
+            # Extarct the 7z file
+            os.system(f"yes | 7z x /media/usb/{filename} -o/media/usb/")
         print("Received message also stored in '/media/usb/'",filename)
     except Exception as e:
         print(f"Failed to save the message in '/media/usb'. Error: {e}")
@@ -256,7 +277,7 @@ def set_role():
         GPIO.output(NM_LED, GPIO.LOW)
         print("Transmitter role selected.")
         print("Switch NM state:", switch_nm_state)
-        print("Switch TXRX state:", switch_txrx_state)
+        print("Switch TX state:", switch_txrx_state)
         # set TX address of RX node into the TX pipe
         nrf.open_tx_pipe(address[0])  # always uses pipe 0
         # set RX address of TX node into an RX pipe
