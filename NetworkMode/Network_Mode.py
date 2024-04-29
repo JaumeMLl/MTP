@@ -47,6 +47,7 @@ nrf = RF24(SPI_BUS, CSN_PIN, CE_PIN)
 nrf.pa_level = -12
 ## to enable the custom ACK payload feature
 nrf.ack = False  # False disables again
+nrf.auto_ack = False
 
 # set TX address of RX node into the TX pipe
 nrf.open_tx_pipe(BROADCAST_ID)
@@ -72,7 +73,7 @@ class CommsInfo:
     def __str__(self):
         return f"Listening Pipe: '{self.listening_pipe_address}', " \
                f"Destination Pipe: '{self.destination_pipe_address}', " \
-               f"Channel='{self.channel}'"
+               f"Channel: '{self.channel}'"
 
 #---- VARIABLES GLOBALES ----#
 comms_info = CommsInfo(BROADCAST_ID, BROADCAST_ID, CHANNEL1)
@@ -130,8 +131,8 @@ def sendRequestAcc():
     - comms_info: Communication information object.
     """
     # Preparar y enviar un mensaje de confirmación de vuelta al transmisor
-    print("Sending request accepted message...")
     time.sleep(random.randint(0, REQUEST_ACC_RANDOM_WAIT))  # Wait a random amount of seconds
+    print("Sending request accepted message...")
     send_message(comms_info.destination_pipe_address, REQUEST_ACC_MSG, nrf)
 
 def anyTransmitAcc():
@@ -184,7 +185,7 @@ def packageTransmission():
     if len(filelist) == 0:
         print(f"No files in: {path}")
         return True
-    transmitter(filelist, TRANSMIT_ATTEMPTS)
+    transmitter(comms_info, filelist, TRANSMIT_ATTEMPTS, nrf)
 
 def sendFileRequest():
     """
@@ -194,7 +195,6 @@ def sendFileRequest():
     - comms_info: Communication information object.
     """
     print("Sending file request...")
-    time.sleep(random.randint(0, FILE_REQUEST_RANDOM_WAIT))  # Wait a random amount of seconds
     r = send_message(comms_info.destination_pipe_address, FILE_REQUEST_MSG, nrf)
     
     if r:
@@ -244,7 +244,7 @@ def packageReception():
     Returns:
     - True if the package is received successfully, False otherwise.
     """
-    receiver(comms_info, TIMEOUT)
+    receiver(comms_info, TIMEOUT, nrf)
 
 # State Machine
 class StateMachine:
@@ -253,7 +253,7 @@ class StateMachine:
 
     def run(self):
         while True:
-            print(f"#---------CURRENT STATE: {self.state} ---------#")
+            print(f"\n\n#---------CURRENT STATE: {self.state} ---------#")
             print(f"Channel Information: {comms_info}")
             time.sleep(1)
             if self.state == "Check File State":
@@ -277,8 +277,14 @@ class StateMachine:
         """
         if checkFileExists():
             ledOn()
+            comms_info.listening_pipe_address = BROADCAST_ID
+            comms_info.destination_pipe_address = BROADCAST_ID
+            set_pipes(comms_info, nrf)
             self.state = "Packet Possession State"
         else:
+            comms_info.listening_pipe_address = MY_PIPE_ID
+            comms_info.destination_pipe_address = BROADCAST_ID
+            set_pipes(comms_info, nrf)
             self.state = "Send Request State"
 
     def packet_possession_state(self):
@@ -286,6 +292,9 @@ class StateMachine:
         Manages packet possession state and transitions accordingly.
         """
         if anySupplicant():
+            comms_info.listening_pipe_address = MY_PIPE_ID
+            # Se define la destination pipe en la función de any Supplicant
+            set_pipes(comms_info, nrf)
             self.state = "Request Accepted State"
         else:
             self.state = "Packet Possession State"
@@ -294,10 +303,16 @@ class StateMachine:
         """
         Manages request accepted state and transitions accordingly.
         """
-        sendRequestAcc()
+        sendRequestAcc() # TODO hacer que si devuelve false nos vamos a packet Possession directos
         if anyTransmitAcc():
+            # Las pipes ya estan bien definidas
+            comms_info.channel = CHANNEL2
+            nrf.channel = CHANNEL2
             self.state = "Packet Transmission State"
         else:
+            comms_info.listening_pipe_address = BROADCAST_ID
+            comms_info.destination_pipe_address = BROADCAST_ID
+            set_pipes(comms_info, nrf)
             self.state = "Packet Possession State"
 
     def packet_transmission_state(self):
@@ -310,7 +325,7 @@ class StateMachine:
             print("Packet Sent Correctly:", packageTransmittedFlag)
         
         comms_info.channel = CHANNEL1
-        # TODO set channel to CHANNEL1
+        nrf.channel = CHANNEL1
         self.state = "Packet Possession State"
 
     def send_request_state(self):
@@ -318,13 +333,18 @@ class StateMachine:
         Manages send request state and transitions accordingly.
         """
         carrierFlag = False
-
+        time.sleep(random.randint(0, FILE_REQUEST_RANDOM_WAIT))  # Wait a random amount of seconds
         if sendFileRequest():
             carrierFlag = anyCarrier()
         if carrierFlag:
-                self.state = "Transmit Confirmation State"
+            comms_info.listening_pipe_address = MY_PIPE_ID
+            # Se define la destination pipe en la función de any Supplicant
+            set_pipes(comms_info, nrf)
+            self.state = "Transmit Confirmation State"
         else:
-            time.sleep(random.randint(1, 5))  # Wait a random amount of seconds
+            comms_info.listening_pipe_address = MY_PIPE_ID
+            comms_info.destination_pipe_address = BROADCAST_ID
+            set_pipes(comms_info, nrf)
             self.state = "Send Request State"
 
     def transmit_confirmation_state(self):
@@ -332,6 +352,7 @@ class StateMachine:
         Manages transmit confirmation state and transitions accordingly.
         """
         sendTransmitionAccepted()
+        nrf.ack = True
         self.state = "Packet Reception State"
 
     def packet_reception_state(self):
@@ -343,8 +364,14 @@ class StateMachine:
         comms_info.channel = CHANNEL1
         if packageReceivedFlag:
             ledOn()
+            comms_info.listening_pipe_address = BROADCAST_ID
+            comms_info.destination_pipe_address = BROADCAST_ID
+            set_pipes(comms_info, nrf)
             self.state = "Packet Possession State"
         else:
+            comms_info.listening_pipe_address = MY_PIPE_ID
+            comms_info.destination_pipe_address = BROADCAST_ID
+            set_pipes(comms_info, nrf)
             self.state = "Send Request State"
 
 # Main
