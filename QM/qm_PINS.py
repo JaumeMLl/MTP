@@ -55,11 +55,12 @@ nrf = RF24(SPI_BUS, CSN_PIN, CE_PIN)
 #                21 = bus 2, CE1  # enable SPI bus 1 prior to running this
 
 # Change the Power Amplifier level
-nrf.pa_level = 0 # -12, -18
+nrf.pa_level = 0 # 0, -12, -18
 ## to enable the custom ACK payload feature
-nrf.ack = True  # False disables again
+nrf.ack = False  # False disables again
 # Set channel, from 1 to 125
-# nrf.setChannel(80)
+nrf.channel = 1
+nrf.data_rate = 250 # RF24_250KBPS (250kbps), RF24_1MBPS (1Mbps), RF24_2MBPS (2Mbps)
 
 # addresses needs to be in a buffer protocol object (bytearray)
 address = [b"1Node", b"2Node"]
@@ -93,6 +94,14 @@ def USB_led():
             GPIO.output(USB_LED, GPIO.HIGH)
             time.sleep(0.5)
         
+def blink_led():
+    delay = 0.2
+    while True:
+        """Blink a LED."""
+        GPIO.output(CONNECTION_LED, GPIO.HIGH)
+        time.sleep(delay)
+        GPIO.output(CONNECTION_LED, GPIO.LOW)
+        time.sleep(delay)
 
 def reset_leds():
     """Turn off all LEDs."""
@@ -103,65 +112,62 @@ def reset_leds():
     GPIO.output(USB_LED, GPIO.LOW)
 
 
-def master(filelist, count=500):
+def master(filelist, count=5):
     nrf.listen = False  # ensure the nRF24L01 is in TX mode
     GPIO.output(TRANSMITTER_LED, GPIO.HIGH)
     
     filepath = filelist[0]
     
+    print(f"Sending file: {filepath}")
+    
     # # Compress the file using zip
     # os.system(f"zip -j {filepath}.zip {filepath}")
     # filepath = filepath + ".zip"
     
-    # # Compress the file using 7z
-    # os.system(f"yes | 7z a {filepath}.7z {filepath}")
-    # filepath = filepath + ".7z"
+    # Compress the file using 7z
+    os.system(f"yes | 7z a {filepath}.7z {filepath}")
+    filepath = filepath + ".7z"
     
     # This line stores the filename in the message
     message = open(filepath, 'rb').read() + b'separaciofitxer' + bytes(filepath.split('/')[-1], 'utf-8')
 
-    chunks = [message[i:i + 31] for i in range(0, len(message), 31)]
+    chunks = [message[i:i + 32] for i in range(0, len(message), 32)]
 
+    retries = 0
+    # Start the LED blink thread
+    thread_blink_led = threading.Thread(target=blink_led)
+    thread_blink_led.start() 
     for chunk in chunks:
-        attempt = 0
-        packet_ID = 0 # We only have 1 byte for the packet ID
-        while attempt < count:
-            # Show percentage of message sent
-            # print(f"Percentage of message sent: {round((chunks.index(chunk)+1)/len(chunks)*100, 2)}%")
-            # Append the packet ID to the end of the chunk
-            chunk = chunk + bytes([packet_ID])
-            print(f"Sending chunk: {chunk} with packet ID: {packet_ID}")
-            print("Length of chunk:", len(chunk))
-            nrf.send(chunk)  # Enviar el chunk
-            nrf.listen = True  # Cambiar al modo RX para esperar el ACK
+        # Show percentage of message sent
+        print(f"Percentage of message sent: {round((chunks.index(chunk)+1)/len(chunks)*100, 2)}%")
+        # Append the packet ID to the end of the chunk
+        # chunk = chunk + bytes([packet_ID])
+        # print(f"Sending chunk: {chunk}")
+        # print("Length of chunk:", len(chunk))
+        result = nrf.send(chunk)  # Enviar el chunk
 
-            start_time = time.monotonic()  # Iniciar el temporizador
-            while time.monotonic() - start_time < 5: # Esperar hasta 5 segundos para recibir el ACK
-                if nrf.available():  # Verificar si hay un mensaje disponible
-                    GPIO.output(CONNECTION_LED, GPIO.HIGH)
-                    received_payload = nrf.read()  # Leer el payload recibido
-                    if received_payload == bytes(packet_ID):  # Si se recibe el ACK esperado
-                        print("ACK received. Sending next chunk.")
-                        attempt = count  # Salir del bucle de reintento
-                        break  # Salir del bucle de espera
-                time.sleep(0.1)  # Pequeña pausa para evitar sobrecargar la CPU
-
-            nrf.listen = False  # Cambiar de nuevo al modo TX después de esperar el ACK
-
-            if attempt < count - 1:  # Si no se recibió el ACK, reintento
-                print("No ACK received. Retrying...")
-            attempt += 1
-
-        if packet_ID >= 255:
-            packet_ID = 0
+        # received_payload = nrf.read()  # Leer el payload recibido
+        if result:  # Si se recibe el ACK esperado
+            print("ACK received. Sending next chunk.")
+            retries = 0
         else:
-            packet_ID += 1
-        if attempt == count:  # Si se agotaron los intentos sin recibir ACK
-            print("Failed to receive ACK after maximum attempts. Moving to the next chunk.")
-            # Opcional: podrías elegir terminar el envío completamente aquí si es crítico
-            # break
+            print("No ACK received. Retrying...")
+            while not result:
+                result = nrf.send(chunk)
+                print(result)
+                time.sleep(0.5)
+                # retries += 1
+                # if retries > 100:
+                #     print("Too many retries. Exiting...")
+                #     reset_leds()
+                #     break
+
+        # if attempt < count - 1:  # Si no se recibió el ACK, reintento
+        #     print("No ACK received. Retrying...")
+        #     nrf.resend
+
     print("Message transmission complete.")
-    ack_payload = b'OK'  # Mensaje de finalización
+    ack_payload = b'FINALTRANSMISSIO'  # Mensaje de finalización
     nrf.listen = False  # Dejar de escuchar para poder enviar
     sent_successfully = nrf.send(ack_payload)  # Enviar el mensaje de confirmación
     if sent_successfully:
@@ -169,6 +175,8 @@ def master(filelist, count=500):
     else:
         print("Failed to send confirmation message.")
         nrf.send(ack_payload)
+    # Kill blink thread
+    thread_blink_led.join()
     GPIO.output(TRANSMITTER_LED, GPIO.LOW)
 
 
@@ -178,41 +186,21 @@ def slave(timeout=1000):
     message = []  # list to accumulate message chunks
     start = time.monotonic()
 
-    last_packet_ID = -1
     print("Waiting for incoming message...")
+    # Start the LED blink thread
+    thread_blink_led = threading.Thread(target=blink_led)
+    thread_blink_led.start() 
     while (time.monotonic() - start) < timeout:
         if nrf.available():
-            GPIO.output(CONNECTION_LED, GPIO.HIGH)
             received_payload = nrf.read()  # Leer el mensaje entrante
-            if received_payload == b'OK':
+            if received_payload == b'FINALTRANSMISSIO':
                 # Mensaje transmission complete
                 print("Message transmission complete.")
                 break
             else:
                 # print(f'Received payload: {received_payload}')
-                # Extract the last two bits of the received_payload, this is the packet ID (int)
-                packet_ID = int(received_payload[-1])
-                # Remove the packet ID from the received_payload
-                received_payload = received_payload[:-1]
-                print(f"Packet ID: {packet_ID}")
-                if packet_ID == last_packet_ID:
-                    print("Repeated packet. Discarding...")
-                    continue
-                else:
-                    last_packet_ID = packet_ID
-                    message.append(received_payload)
+                message.append(received_payload)
 
-            # Preparar y enviar un mensaje de confirmación de vuelta al transmisor
-            ack_payload = bytes(packet_ID)#b'ACK'  # Mensaje de confirmación
-            nrf.listen = False  # Dejar de escuchar para poder enviar
-            sent_successfully = nrf.send(ack_payload)  # Enviar el mensaje de confirmación
-
-            if sent_successfully:
-                print("Confirmation message sent successfully.")
-            else:
-                print("Failed to send confirmation message.")
-
-            nrf.listen = True  # Volver al modo de escucha después de enviar
             start = time.monotonic()  # Restablecer el temporizador
             
 
@@ -229,9 +217,13 @@ def slave(timeout=1000):
     
     # # # Extract the zip file
     # # os.system(f"unzip -j {filename} -d .")
-    # os.system(f"yes | 7z x {filename} -o.")
+    
+    # Extract the 7z file
+    os.system(f"yes | 7z x {filename} -o.")
 
     print("Received message stored in",filename)
+    # Kill blink thread
+    thread_blink_led.join()
     GPIO.output(RECEIVER_LED, GPIO.LOW)
 
     # Guardar también el mensaje completo en un archivo en /mnt/usbdrive
@@ -240,8 +232,8 @@ def slave(timeout=1000):
             file.write(complete_message)
             # # # Extract the zip file
             # # os.system(f"unzip -j /media/usb/{filename} -d /media/usb/")
-            # # Extract the 7z file
-            # os.system(f"yes | 7z x /media/usb/{filename} -o/media/usb/")
+            # Extract the 7z file
+            os.system(f"yes | 7z x /media/usb/{filename} -o/media/usb/")
         print("Received message also stored in '/media/usb/'",filename)
     except Exception as e:
         print(f"Failed to save the message in '/media/usb'. Error: {e}")
@@ -304,6 +296,7 @@ def set_role():
         path = '/media/usb'  # Ruta completa al archivo en el directorio /mnt/usbdrive
         filelist = np.array([os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]) # Get the list of files in the directory
         filelist = filelist[np.where([x.endswith(".txt") and not x.startswith(".") for x in filelist])[0]] # Get the elements that end with ".txt" and does not start with "."
+        print("filelist",filelist)
         if not os.path.exists(path):
             print(f"Path not found: {path}")
             return True
