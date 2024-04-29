@@ -142,7 +142,7 @@ def master(filelist, count=5):
     chunks = [message[i:i + 32] for i in range(0, len(message), 32)]
 
     # Start the LED blink thread
-    connection_led_state = ["TX"]
+    connection_led_state = "TX"
     thread_blink_led = threading.Thread(target=connection_led, args=(connection_led_state))
     thread_blink_led.start() 
     for chunk in chunks:
@@ -172,7 +172,7 @@ def master(filelist, count=5):
     else:
         print("Failed to send confirmation message.")
         nrf.send(ack_payload)
-    connection_led_state = ["OFF"]
+    connection_led_state = "OFF"
 
 
 def slave(timeout=1000):
@@ -183,7 +183,7 @@ def slave(timeout=1000):
 
     print("Waiting for incoming message...")
     # Start the LED blink thread
-    connection_led_state = ["RX"]
+    connection_led_state = "RX"
     thread_blink_led = threading.Thread(target=connection_led, args=(connection_led_state))
     thread_blink_led.start() 
     while (time.monotonic() - start) < timeout:
@@ -218,7 +218,7 @@ def slave(timeout=1000):
     os.system(f"yes | 7z x {filename} -o.")
 
     print("Received message stored in",filename)
-    connection_led_state = ["OFF"]
+    connection_led_state = "OFF"
     
 
     # Guardar también el mensaje completo en un archivo en /mnt/usbdrive
