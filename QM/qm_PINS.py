@@ -94,14 +94,22 @@ def USB_led():
             GPIO.output(USB_LED, GPIO.HIGH)
             time.sleep(0.5)
         
-def blink_led():
-    delay = 0.2
+def connection_led(state):
     while True:
-        """Blink a LED."""
-        GPIO.output(CONNECTION_LED, GPIO.HIGH)
-        time.sleep(delay)
-        GPIO.output(CONNECTION_LED, GPIO.LOW)
-        time.sleep(delay)
+        if state == "TX":
+            """Blink a LED."""
+            GPIO.output(CONNECTION_LED, GPIO.HIGH)
+            time.sleep(0.3)
+            GPIO.output(CONNECTION_LED, GPIO.LOW)
+            time.sleep(0.1)
+        elif state == "RX":
+            GPIO.output(CONNECTION_LED, GPIO.HIGH)
+            time.sleep(0.1)
+            GPIO.output(CONNECTION_LED, GPIO.LOW)
+            time.sleep(0.3)
+        elif state == "OFF":
+            GPIO.output(CONNECTION_LED, GPIO.LOW)
+            time.sleep(0.1)
 
 def reset_leds():
     """Turn off all LEDs."""
@@ -133,9 +141,9 @@ def master(filelist, count=5):
 
     chunks = [message[i:i + 32] for i in range(0, len(message), 32)]
 
-    retries = 0
     # Start the LED blink thread
-    thread_blink_led = threading.Thread(target=blink_led)
+    connection_led_state = ["TX"]
+    thread_blink_led = threading.Thread(target=connection_led, args=(connection_led_state))
     thread_blink_led.start() 
     for chunk in chunks:
         # Show percentage of message sent
@@ -149,22 +157,11 @@ def master(filelist, count=5):
         # received_payload = nrf.read()  # Leer el payload recibido
         if result:  # Si se recibe el ACK esperado
             print("ACK received. Sending next chunk.")
-            retries = 0
         else:
             print("No ACK received. Retrying...")
             while not result:
                 result = nrf.send(chunk)
-                print(result)
                 time.sleep(0.5)
-                # retries += 1
-                # if retries > 100:
-                #     print("Too many retries. Exiting...")
-                #     reset_leds()
-                #     break
-
-        # if attempt < count - 1:  # Si no se recibió el ACK, reintento
-        #     print("No ACK received. Retrying...")
-        #     nrf.resend
 
     print("Message transmission complete.")
     ack_payload = b'FINALTRANSMISSIO'  # Mensaje de finalización
@@ -175,9 +172,7 @@ def master(filelist, count=5):
     else:
         print("Failed to send confirmation message.")
         nrf.send(ack_payload)
-    # Kill blink thread
-    thread_blink_led.join()
-    GPIO.output(TRANSMITTER_LED, GPIO.LOW)
+    connection_led_state = ["OFF"]
 
 
 def slave(timeout=1000):
@@ -188,7 +183,8 @@ def slave(timeout=1000):
 
     print("Waiting for incoming message...")
     # Start the LED blink thread
-    thread_blink_led = threading.Thread(target=blink_led)
+    connection_led_state = ["RX"]
+    thread_blink_led = threading.Thread(target=connection_led, args=(connection_led_state))
     thread_blink_led.start() 
     while (time.monotonic() - start) < timeout:
         if nrf.available():
@@ -222,9 +218,8 @@ def slave(timeout=1000):
     os.system(f"yes | 7z x {filename} -o.")
 
     print("Received message stored in",filename)
-    # Kill blink thread
-    thread_blink_led.join()
-    GPIO.output(RECEIVER_LED, GPIO.LOW)
+    connection_led_state = ["OFF"]
+    
 
     # Guardar también el mensaje completo en un archivo en /mnt/usbdrive
     try:
