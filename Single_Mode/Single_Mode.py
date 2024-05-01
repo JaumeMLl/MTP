@@ -264,7 +264,7 @@ def slave(timeout=1000):
         for txt_file in txt_files:
             shutil.copy(txt_file, '/media/usb/')
             print(f"Received message '{txt_file}' also stored in '/media/usb/'")
-            #blink_success_leds(10, USB_LED, USB_LED)
+            #blink_success_leds(10, USB_LED, USB_LED) 
             #reset_leds()
     except Exception as e:
         print(f"Failed to save the message in '/media/usb'. Error: {e}")
@@ -317,8 +317,7 @@ def set_role():
         slave()
         return True
 
-# Canviar l'ordre, primer espera al primer switch per si es network mode o no, després si NO es 
-# Network Mode 
+
 if __name__ == "__main__":
     reset_leds()
     print("Waiting for USB drive...")
