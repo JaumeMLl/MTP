@@ -45,14 +45,15 @@ After=multi-user.target
 
 [Service]
 User=pi
-ExecStart=/usr/bin/python3 /home/pi/MTP/Single_Mode/Single_Mode.py 
+ExecStart=/usr/bin/python3 /home/pi/SM/Single_Mode.py 
 
 [Install]
 WantedBy=multi-user.target
 ```
 3. Guardar i sortir
 
-4.sudo systemctl daemon-reload
+4.
+  `sudo systemctl daemon-reload`
 
 5. Permetre aquest servei
 
@@ -70,11 +71,11 @@ WantedBy=multi-user.target
 
 2. Desactivem el servei 
 
-`sudo systemctl disable **my_script**.service`
+`sudo systemctl disable Single_Mode.service`
 
 3. Parar el servei 
 
-`sudo systemctl stop **my_script**.service`
+`sudo systemctl stop Single_Mode.service`
 
 4. Reboot
 
