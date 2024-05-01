@@ -24,6 +24,57 @@ Important: The CE in the raspberry corresponds to the chip select (In the transi
 
 Important: The CE in the transciver corresponds to chip enable
 
+### Fer que s'executi el .py directament al obrir la raspy
+
+1. Crear un file systemd --> **my_script** es pot canviar 
+
+`sudo nano /etc/systemd/system/Single_Mode.service`
+
+2. Afegir el següent contingut --> S'ha d'editar la ubicació corresponent de l'script
+
+```
+[Unit]
+Description=My Python Script
+After=multi-user.target
+
+[Service]
+User=pi
+ExecStart=/usr/bin/python3 /home/pi/MTP/Single_Mode/Single_Mode.py 
+
+[Install]
+WantedBy=multi-user.target
+```
+3. Guardar i sortir
+
+4.sudo systemctl daemon-reload
+
+5. Permetre aquest servei
+
+`sudo systemctl enable Single_Mode.service`
+
+5. Començar el servei
+
+`sudo systemctl start Single_Mode.service`
+
+!! Si no funciona fer un reboot !! (`sudo reboot`)
+
+### Per desautomatitzar-ho: 
+
+1. Obrim un terminal a la raspy
+
+2. Desactivem el servei 
+
+`sudo systemctl disable **my_script**.service`
+
+3. Parar el servei 
+
+`sudo systemctl stop **my_script**.service`
+
+4. Reboot
+
+`sudo reboot`
+
+
 ### Conexions
 
 The result of the conections is the following:
