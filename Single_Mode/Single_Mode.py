@@ -133,18 +133,19 @@ def master(filelist):
         fifo_state_tx = nrf.fifo(True)
     '''
     #vaciar buffers
+    '''
     fifo_state_tx = nrf.fifo(True)
     while fifo_state_tx == 1:
         nrf.send(b'hola')
         nrf.read()
         fifo_state_tx = nrf.fifo(True)
-
     '''
+    
     for i in range(100):
         nrf.send(b'hola')
         nrf.read()
-    '''
-    #fifo_state_tx = nrf.fifo(True)
+    
+    fifo_state_tx = nrf.fifo(True)
     fifo_state_rx = nrf.fifo(False)
     print('fifo state TX:',fifo_state_tx)
     print('fifo state RX:',fifo_state_rx)
