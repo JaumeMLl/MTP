@@ -217,14 +217,17 @@ def slave(timeout=1000):
     # Extract the 7z file
     os.system(f"yes | 7z x {filename} -o.")
 
+    # Get the name of the extracted .txt file
+    extracted_filename = filename.replace('.7z', '.txt')
+
     print("Received message stored in",filename)
     connection_led_state = "OFF"
     
 
     # Copy the extracted .txt file to the USB directory
     try:
-        shutil.copy(filename, '/media/usb/')
-        print("Received message also stored in '/media/usb/'",filename)
+        shutil.copy(extracted_filename, '/media/usb/')
+        print("Received message also stored in '/media/usb/'",extracted_filename)
     except Exception as e:
         print(f"Failed to save the message in '/media/usb'. Error: {e}")
 
