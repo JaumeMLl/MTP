@@ -226,8 +226,9 @@ def slave(timeout=1000):
 
     # Copy the extracted .txt file to the USB directory
     try:
-        shutil.copy(txt_files, '/media/usb/')
-        print("Received message also stored in '/media/usb/'",txt_files)
+        for txt_file in txt_files:
+            shutil.copy(txt_file, '/media/usb/')
+            print(f"Received message '{txt_file}' also stored in '/media/usb/'")
     except Exception as e:
         print(f"Failed to save the message in '/media/usb'. Error: {e}")
 
