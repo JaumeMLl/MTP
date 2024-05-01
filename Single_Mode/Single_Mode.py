@@ -185,6 +185,7 @@ def master(filelist):
     if sent_successfully:
         print("Confirmation message sent successfully.")
         blink_success_leds(10, CONNECTION_LED, NM_LED)
+        reset_leds()
     else:
         print("Failed to send confirmation message.")
         sent_successfully = nrf.send(ack_payload)
@@ -264,7 +265,7 @@ def slave(timeout=1000):
         for txt_file in txt_files:
             shutil.copy(txt_file, '/media/usb/')
             print(f"Received message '{txt_file}' also stored in '/media/usb/'")
-            blink_success_leds(10, USB_LED, None)
+            blink_success_leds(10, USB_LED, USB_LED)
             reset_leds()
     except Exception as e:
         print(f"Failed to save the message in '/media/usb'. Error: {e}")
