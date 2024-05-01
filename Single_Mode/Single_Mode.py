@@ -116,8 +116,6 @@ def master(filelist, count=5):
     GPIO.output(TRANSMITTER_LED, GPIO.HIGH)
     nrf.flush_tx()
     nrf.flush_rx()  # Vaciar el búfer de recepción
-    nrf.flush_tx()
-    nrf.flush_rx() 
     filepath = filelist[0]
     print(f"Sending file: {filepath}")
     
@@ -177,6 +175,8 @@ def master(filelist, count=5):
 
 def slave(timeout=1000):
     nrf.listen = True  # put radio into RX mode and power up
+    nrf.flush_tx()
+    nrf.flush_rx()  # Vaciar el búfer de recepción
     GPIO.output(RECEIVER_LED, GPIO.HIGH)
     message = []  # list to accumulate message chunks
     start = time.monotonic()
