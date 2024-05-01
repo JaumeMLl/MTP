@@ -115,7 +115,7 @@ def blink_failure_leds(N):
         GPIO.output(RECEIVER_LED, GPIO.LOW)
         time.sleep(0.5)
 
-def master(filelist, count=5):
+def master(filelist):
     nrf.listen = True
     nrf.listen = False  # ensure the nRF24L01 is in TX mode
     GPIO.output(TRANSMITTER_LED, GPIO.HIGH)
@@ -132,6 +132,7 @@ def master(filelist, count=5):
         fifo_state_rx = nrf.fifo(False)
         fifo_state_tx = nrf.fifo(True)
     '''
+    #vaciar buffers
     for i in range(10):
         nrf.send(b'hola')
         nrf.read()
@@ -157,7 +158,6 @@ def master(filelist, count=5):
     
     result = nrf.send(b'Ready')
     print('fifo state TX1:',fifo_state_tx)
-    print('fifo state RX1:',fifo_state_rx)
     while not result:
         time.sleep(0.1)
         print('Receiver not ready')
@@ -165,10 +165,8 @@ def master(filelist, count=5):
 
     print("Receiver is ready to receive.")
     
-    for i, chunk in enumerate(chunks):
-        print('NUMERO', i)
+    for chunk in enumerate(chunks):
         print('fifo state TX2:',fifo_state_tx)
-        print('fifo state RX2:',fifo_state_rx)
         result = nrf.send(chunk)  # Enviar el chunk
         # received_payload = nrf.read()  # Leer el payload recibido
         if result:  # Si se recibe el ACK esperado
@@ -338,9 +336,9 @@ if __name__ == "__main__":
     try:
         set_role()
     except KeyboardInterrupt:
+        reset_leds()
         print(" Keyboard Interrupt detected. Powering down radio...")
         nrf.power = False
         GPIO.cleanup()
-        reset_leds()
 else:
     print("    Run slave() on receiver\n    Run master() on transmitter")
