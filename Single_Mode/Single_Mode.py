@@ -136,7 +136,6 @@ def master(filelist):
         nrf.send(b'hola')
         nrf.read()
     fifo_state_tx = nrf.fifo(True)
-    fifo_state_rx = nrf.fifo(False)
     print('fifo state TX:',fifo_state_tx)
     filepath = filelist[0]
     print(f"Sending file: {filepath}")
@@ -265,8 +264,8 @@ def slave(timeout=1000):
         for txt_file in txt_files:
             shutil.copy(txt_file, '/media/usb/')
             print(f"Received message '{txt_file}' also stored in '/media/usb/'")
-            blink_success_leds(10, USB_LED, USB_LED)
-            reset_leds()
+            #blink_success_leds(10, USB_LED, USB_LED)
+            #reset_leds()
     except Exception as e:
         print(f"Failed to save the message in '/media/usb'. Error: {e}")
 
