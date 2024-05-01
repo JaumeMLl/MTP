@@ -93,23 +93,7 @@ def USB_led():
         else:
             GPIO.output(USB_LED, GPIO.HIGH)
             time.sleep(0.5)
-        
-def connection_led(state):
-    while True:
-        if state == "TX":
-            """Blink a LED."""
-            GPIO.output(CONNECTION_LED, GPIO.HIGH)
-            time.sleep(0.3)
-            GPIO.output(CONNECTION_LED, GPIO.LOW)
-            time.sleep(0.1)
-        elif state == "RX":
-            GPIO.output(CONNECTION_LED, GPIO.HIGH)
-            time.sleep(0.1)
-            GPIO.output(CONNECTION_LED, GPIO.LOW)
-            time.sleep(0.3)
-        elif state == "OFF":
-            GPIO.output(CONNECTION_LED, GPIO.LOW)
-            time.sleep(0.1)
+
 
 def reset_leds():
     """Turn off all LEDs."""
@@ -118,6 +102,24 @@ def reset_leds():
     GPIO.output(CONNECTION_LED, GPIO.LOW)
     GPIO.output(NM_LED, GPIO.LOW)
     GPIO.output(USB_LED, GPIO.LOW)
+    
+def blink_success_leds(N):
+    for i in range(N):
+        GPIO.output(CONNECTION_LED, GPIO.HIGH)
+        GPIO.output(NM_LED, GPIO.HIGH)
+        time.sleep(0.5)
+        GPIO.output(CONNECTION_LED, GPIO.LOW)
+        GPIO.output(NM_LED, GPIO.LOW)
+        time.sleep(0.5)
+        
+def blink_failure_leds(N):
+    for i in range(N):
+        GPIO.output(TRANSMITTER_LED, GPIO.HIGH)
+        GPIO.output(RECEIVER_LED, GPIO.HIGH)
+        time.sleep(0.5)
+        GPIO.output(TRANSMITTER_LED, GPIO.LOW)
+        GPIO.output(RECEIVER_LED, GPIO.LOW)
+        time.sleep(0.5)
 
 
 def master(filelist, count=5):
@@ -141,10 +143,6 @@ def master(filelist, count=5):
 
     chunks = [message[i:i + 32] for i in range(0, len(message), 32)]
 
-    # Start the LED blink thread
-    connection_led_state = "TX"
-    thread_blink_led = threading.Thread(target=connection_led, args=(connection_led_state))
-    thread_blink_led.start() 
     for chunk in chunks:
         # Show percentage of message sent
         print(f"Percentage of message sent: {round((chunks.index(chunk)+1)/len(chunks)*100, 2)}%")
@@ -157,8 +155,10 @@ def master(filelist, count=5):
         # received_payload = nrf.read()  # Leer el payload recibido
         if result:  # Si se recibe el ACK esperado
             print("ACK received. Sending next chunk.")
+            GPIO.output(CONNECTION_LED, GPIO.HIGH)
         else:
             print("No ACK received. Retrying...")
+            GPIO.output(CONNECTION_LED, GPIO.LOW)
             while not result:
                 result = nrf.send(chunk)
                 time.sleep(0.5)
@@ -169,10 +169,15 @@ def master(filelist, count=5):
     sent_successfully = nrf.send(ack_payload)  # Enviar el mensaje de confirmación
     if sent_successfully:
         print("Confirmation message sent successfully.")
+        blink_success_leds(10)
     else:
         print("Failed to send confirmation message.")
-        nrf.send(ack_payload)
-    connection_led_state = "OFF"
+        sent_successfully = nrf.send(ack_payload)
+        while not sent_successfully:
+            sent_successfully = nrf.send(ack_payload)
+            time.sleep(0.5)
+        print("Confirmation message sent successfully.")
+        GPIO.output(CONNECTION_LED, GPIO.LOW)
 
 
 def slave(timeout=1000):
@@ -182,11 +187,8 @@ def slave(timeout=1000):
     start = time.monotonic()
 
     print("Waiting for incoming message...")
-    # Start the LED blink thread
-    connection_led_state = "RX"
-    thread_blink_led = threading.Thread(target=connection_led, args=(connection_led_state))
-    thread_blink_led.start() 
     while (time.monotonic() - start) < timeout:
+        GPIO.output(CONNECTION_LED, GPIO.LOW)
         if nrf.available():
             received_payload = nrf.read()  # Leer el mensaje entrante
             if received_payload == b'FINALTRANSMISSIO':
@@ -196,6 +198,7 @@ def slave(timeout=1000):
             else:
                 # print(f'Received payload: {received_payload}')
                 message.append(received_payload)
+                GPIO.output(CONNECTION_LED, GPIO.HIGH)
 
             start = time.monotonic()  # Restablecer el temporizador
             
@@ -215,10 +218,9 @@ def slave(timeout=1000):
     # # os.system(f"unzip -j {filename} -d .")
     
     # Extract the 7z file
-    os.system(f"yes | 7z x {filename} -o.")
+    output = os.system(f"yes | 7z x {filename} -o.")
 
     print("Received message stored in",filename)
-    connection_led_state = "OFF"
     
 
     # Guardar también el mensaje completo en un archivo en /mnt/usbdrive
@@ -229,6 +231,12 @@ def slave(timeout=1000):
             # # os.system(f"unzip -j /media/usb/{filename} -d /media/usb/")
             # Extract the 7z file
             os.system(f"yes | 7z x /media/usb/{filename} -o/media/usb/")
+            if output == 0:
+                print("File decompressed successfully")
+                blink_success_leds(10)
+            else:
+                print("Error decompressing the file")
+                blink_failure_leds(10)
         print("Received message also stored in '/media/usb/'",filename)
     except Exception as e:
         print(f"Failed to save the message in '/media/usb'. Error: {e}")
