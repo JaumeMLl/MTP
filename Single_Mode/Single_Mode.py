@@ -133,13 +133,13 @@ def master(filelist, count=5):
     chunks = [message[i:i + 32] for i in range(0, len(message), 32)]
      # test the connection, wait for the first ack
     result = nrf.send(b'INICI')  # Enviar el mensaje de inicio
-
+    print('Valor de result:', result)
     while not result:
         result = nrf.send(b'INICI')
         time.sleep(0.1)
     print("Connection established. Sending message.")
     result = False
-    
+
     for i, chunk in enumerate(chunks):
         print('Chunk number:', i)
         result = nrf.send(chunk)  # Enviar el chunk
