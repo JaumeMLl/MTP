@@ -67,15 +67,6 @@ nrf.data_rate = 250 # RF24_250KBPS (250kbps), RF24_1MBPS (1Mbps), RF24_2MBPS (2M
 # addresses needs to be in a buffer protocol object (bytearray)
 address = [b"1Node", b"2Node"]
 
-# to use different addresses on a pair of radios, we need a variable to
-# uniquely identify which address this radio will use to transmit
-# 0 uses address[0] to transmit, 1 uses address[1] to transmit
-'''
-radio_number = bool(
-    int(input("Which radio is this? Enter '0' or '1'. Defaults to '0' ") or 0)
-)
-'''
-
 # set TX address of RX node into the TX pipe
 nrf.open_tx_pipe(address[0])  # always uses pipe 0
 
@@ -148,20 +139,15 @@ def master(filelist, count=5):
     for chunk in chunks:
         # Show percentage of message sent
         print(f"Percentage of message sent: {round((chunks.index(chunk)+1)/len(chunks)*100, 2)}%")
-        # Append the packet ID to the end of the chunk
-        # chunk = chunk + bytes([packet_ID])
-        # print(f"Sending chunk: {chunk}")
-        # print("Length of chunk:", len(chunk))
         result = nrf.send(chunk)  # Enviar el chunk
-
         # received_payload = nrf.read()  # Leer el payload recibido
         if result:  # Si se recibe el ACK esperado
             print("ACK received. Sending next chunk.")
         else:
-            print("No ACK received. Retrying...")
             while not result:
+                print("No ACK received. Retrying...")
                 result = nrf.send(chunk)
-                time.sleep(0.5)
+                #time.sleep(0.5)
 
     print("Message transmission complete.")
     ack_payload = b'FINALTRANSMISSIO'  # Mensaje de finalización
