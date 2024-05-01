@@ -131,10 +131,12 @@ def master(filelist, count=5):
     message = open(filepath, 'rb').read() + b'separaciofitxer' + bytes(filepath.split('/')[-1], 'utf-8')
 
     chunks = [message[i:i + 32] for i in range(0, len(message), 32)]
-    nrf.send(b'Ready')
-    while not nrf.available():
+    result = nrf.send(b'Ready')
+    while not result:
         time.sleep(0.1)
         print('No receiver')
+        result = nrf.send(b'Ready')
+
     print("Receiver is ready to receive.")
     
     for i, chunk in enumerate(chunks):
@@ -176,6 +178,12 @@ def slave(timeout=1000):
     GPIO.output(RECEIVER_LED, GPIO.HIGH)
     message = []  # list to accumulate message chunks
     start = time.monotonic()
+
+    print("Waiting for start message...")
+    received_payload = nrf.read()  # Leer el mensaje entrante
+    while received_payload != b'Ready':
+        received_payload = nrf.read()
+        print("Waiting for start message...")
 
     print("Waiting for incoming message...")
     while (time.monotonic() - start) < timeout:
