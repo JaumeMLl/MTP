@@ -7,6 +7,8 @@ import subprocess
 import RPi.GPIO as GPIO
 import threading
 import numpy as np
+import shutil
+
 
 from circuitpython_nrf24l01.rf24 import RF24
 
@@ -219,50 +221,14 @@ def slave(timeout=1000):
     connection_led_state = "OFF"
     
 
-    # Guardar también el mensaje completo en un archivo en /mnt/usbdrive
+    # Copy the extracted .txt file to the USB directory
     try:
-        with open('/media/usb/'+filename, 'wb') as file:
-            file.write(complete_message)
-            # # # Extract the zip file
-            # # os.system(f"unzip -j /media/usb/{filename} -d /media/usb/")
-            # Extract the 7z file
-            os.system(f"yes | 7z x /media/usb/{filename} -o/media/usb/")
+        shutil.copy(filename, '/media/usb/')
         print("Received message also stored in '/media/usb/'",filename)
     except Exception as e:
         print(f"Failed to save the message in '/media/usb'. Error: {e}")
-   # nrf.listen = False  # Se recomienda mantener el transceptor en modo TX mientras está inactivo
 
 
-''' OLD SET_ROLE 
-def set_role():
-    """Set the role using stdin stream."""
-    role = input(
-        "*** Enter 'R' for receiver role.\n"
-        "*** Enter 'T' for transmitter role\n"
-        "*** Enter 'Q' to quit example.\n"
-    ).strip().upper()
-
-    if role == 'R':
-        slave()
-        return True
-    elif role == 'T':
-        path = '/media/usb'  # Ruta completa al archivo en el directorio /mnt/usbdrive
-        filelist = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
-        if not os.path.exists(path):
-            print(f"Path not found: {path}")
-            return True
-        if len(filelist) == 0:
-            print(f"No files in: {path}")
-            return True
-        master(filelist)
-        return True
-    elif role == 'Q':
-        nrf.power = False
-        return False
-    else:
-        print(role, "is an unrecognized input. Please try again.")
-        return set_role()
-'''
 
 def set_role(): 
     """Set the role using GPIO switches."""
