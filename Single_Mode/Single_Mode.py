@@ -156,11 +156,11 @@ def master(filelist):
 
     chunks = [message[i:i + 32] for i in range(0, len(message), 32)]
     
-    result = nrf.send(b'Ready')
+    state = nrf.send(b'Ready')
     print('fifo state TX1:',fifo_state_tx)
-    while not result:
+    while not state:
         time.sleep(0.1)
-        result = nrf.send(b'Ready')
+        state = nrf.send(b'Ready')
 
     print("Receiver is ready to receive.")
     
