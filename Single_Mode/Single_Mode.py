@@ -134,6 +134,7 @@ def master(filelist, count=5):
     '''
     for i in range(10):
         nrf.send(b'hola')
+        nrf.read()
     fifo_state_tx = nrf.fifo(True)
     fifo_state_rx = nrf.fifo(False)
     print('fifo state TX:',fifo_state_tx)
