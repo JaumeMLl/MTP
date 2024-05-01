@@ -137,8 +137,6 @@ def master(filelist, count=5):
     thread_blink_led = threading.Thread(target=connection_led, args=(connection_led_state))
     thread_blink_led.start() 
     for chunk in chunks:
-        # Show percentage of message sent
-        print(f"Percentage of message sent: {round((chunks.index(chunk)+1)/len(chunks)*100, 2)}%")
         result = nrf.send(chunk)  # Enviar el chunk
         # received_payload = nrf.read()  # Leer el payload recibido
         if result:  # Si se recibe el ACK esperado
@@ -148,7 +146,8 @@ def master(filelist, count=5):
                 print("No ACK received. Retrying...")
                 result = nrf.send(chunk)
                 #time.sleep(0.5)
-
+        # Show percentage of message sent
+        print(f"Percentage of message sent: {round((chunks.index(chunk)+1)/len(chunks)*100, 2)}%")
     print("Message transmission complete.")
     ack_payload = b'FINALTRANSMISSIO'  # Mensaje de finalización
     nrf.listen = False  # Dejar de escuchar para poder enviar
