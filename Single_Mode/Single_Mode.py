@@ -220,6 +220,7 @@ def slave(timeout=1000):
 
     #vaciar buffers
     fifo_state_rx = nrf.fifo(False)
+    print(fifo_state_rx)
     while fifo_state_rx == 1:
         nrf.send(b'hola')
         nrf.read()
