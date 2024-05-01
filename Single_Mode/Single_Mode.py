@@ -132,7 +132,7 @@ def master(filelist, count=5):
 
     chunks = [message[i:i + 32] for i in range(0, len(message), 32)]
 
-    for i, chunk in chunks:
+    for i, chunk in enumerate(chunks):
         print('NUMERO', i)
         result = nrf.send(chunk)  # Enviar el chunk
         # received_payload = nrf.read()  # Leer el payload recibido
