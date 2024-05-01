@@ -131,7 +131,7 @@ def master(filelist, count=5):
     message = open(filepath, 'rb').read() + b'separaciofitxer' + bytes(filepath.split('/')[-1], 'utf-8')
 
     chunks = [message[i:i + 32] for i in range(0, len(message), 32)]
-
+    result = False
     for i, chunk in enumerate(chunks):
         print('NUMERO', i)
         result = nrf.send(chunk)  # Enviar el chunk
