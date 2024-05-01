@@ -131,14 +131,16 @@ def master(filelist, count=5):
     message = open(filepath, 'rb').read() + b'separaciofitxer' + bytes(filepath.split('/')[-1], 'utf-8')
 
     chunks = [message[i:i + 32] for i in range(0, len(message), 32)]
-    #canal = nrf.send(b'canal')
+    nrf.send(b'Ready')
+
     while not nrf.available():
         time.sleep(0.1)
-        print('No receiver')
+        print('Waiting for receiver...')
     print("Receiver is ready to receive.")
+
     result = False
     for i, chunk in enumerate(chunks):
-        print('NUMERO', i)
+        print('Chunk number:', i)
         result = nrf.send(chunk)  # Enviar el chunk
         # received_payload = nrf.read()  # Leer el payload recibido
         if result:  # Si se recibe el ACK esperado
