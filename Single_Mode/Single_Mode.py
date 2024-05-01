@@ -137,6 +137,7 @@ def master(filelist):
     while fifo_state_tx == 1:
         nrf.send(b'hola')
         nrf.read()
+        fifo_state_tx = nrf.fifo(True)
 
     '''
     for i in range(100):
