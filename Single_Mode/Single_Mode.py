@@ -114,9 +114,9 @@ def blink_failure_leds(N):
 def master(filelist, count=5):
     nrf.listen = False  # ensure the nRF24L01 is in TX mode
     GPIO.output(TRANSMITTER_LED, GPIO.HIGH)
+    nrf.flush_tx()
     nrf.flush_rx()  # Vaciar el búfer de recepción
     filepath = filelist[0]
-    
     print(f"Sending file: {filepath}")
     
     # # Compress the file using zip
