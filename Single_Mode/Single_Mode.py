@@ -135,12 +135,7 @@ def master(filelist, count=5):
     message = open(filepath, 'rb').read() + b'separaciofitxer' + bytes(filepath.split('/')[-1], 'utf-8')
 
     chunks = [message[i:i + 32] for i in range(0, len(message), 32)]
-
-    if nrf.is_tx_fifo_full():
-        print("The transmission buffer is full.")
-    else:
-        print("The transmission buffer is not full.")
-
+    
     result = nrf.send(b'Ready')
     while not result:
         time.sleep(0.1)
