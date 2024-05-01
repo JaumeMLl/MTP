@@ -153,6 +153,55 @@ Para el directorio del usb con permisos de escritura (y de lectura)
 
 >>>>>>> 0ee453c5ed5b5a67ecded36ce51ef372dba4969e
 
+# Fer que s'executi el .py directament al obrir la raspy
+
+1. Crear un file systemd --> **my_script** es pot canviar 
+
+`sudo nano /etc/systemd/system/**my_script**.service`
+
+2. Afegir el següent contingut --> S'ha d'editar la ubicació corresponent de l'script
+
+```
+[Unit]
+Description=My Python Script
+After=multi-user.target
+
+[Service]
+User=pi
+ExecStart=/usr/bin/python3 /MTP/SCRIPTCORRESPONENT.PY 
+
+[Install]
+WantedBy=multi-user.target
+```
+3. Guardar i sortir
+
+4. Permetre aquest servei
+
+`sudo systemctl enable **my_script**.service`
+
+5. Començar el servei
+
+`sudo systemctl start **my_script**.service`
+
+!! Si no funciona fer un reboot !! (`sudo reboot`)
+
+## Per desautomatitzar-ho: 
+
+1. Obrim un terminal a la raspy
+
+2. Desactivem el servei 
+
+`sudo systemctl disable **my_script**.service`
+
+3. Parar el servei 
+
+`sudo systemctl stop **my_script**.service`
+
+4. Reboot
+
+`sudo reboot`
+
+
 # Canals de NRF2401
 Referència: https://lastminuteengineers.com/nrf24l01-arduino-wireless-communication/#rf-channel-frequency
 Hi ha una imatge on mostra el següent: 

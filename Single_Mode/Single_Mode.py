@@ -39,6 +39,7 @@ NM_LED = 16
 USB_LED = 21
 NM_SWITCH = 3
 TXRX_SWITCH = 2
+ONOFF_SWITCH = 4
 GPIO.setup(TRANSMITTER_LED, GPIO.OUT)
 GPIO.setup(RECEIVER_LED, GPIO.OUT)
 GPIO.setup(CONNECTION_LED, GPIO.OUT)
@@ -46,6 +47,7 @@ GPIO.setup(NM_LED, GPIO.OUT)
 GPIO.setup(USB_LED, GPIO.OUT)
 GPIO.setup(NM_SWITCH, GPIO.IN)
 GPIO.setup(TXRX_SWITCH, GPIO.IN)
+GPIO.setup(ONOFF_SWITCH, GPIO.IN)
 
 # initialize the nRF24L01 on the spi bus object
 nrf = RF24(SPI_BUS, CSN_PIN, CE_PIN)
@@ -64,15 +66,6 @@ nrf.data_rate = 250 # RF24_250KBPS (250kbps), RF24_1MBPS (1Mbps), RF24_2MBPS (2M
 
 # addresses needs to be in a buffer protocol object (bytearray)
 address = [b"1Node", b"2Node"]
-
-# to use different addresses on a pair of radios, we need a variable to
-# uniquely identify which address this radio will use to transmit
-# 0 uses address[0] to transmit, 1 uses address[1] to transmit
-'''
-radio_number = bool(
-    int(input("Which radio is this? Enter '0' or '1'. Defaults to '0' ") or 0)
-)
-'''
 
 # set TX address of RX node into the TX pipe
 nrf.open_tx_pipe(address[0])  # always uses pipe 0
@@ -232,38 +225,6 @@ def slave(timeout=1000):
         print(f"Failed to save the message in '/media/usb'. Error: {e}")
    # nrf.listen = False  # Se recomienda mantener el transceptor en modo TX mientras está inactivo
 
-
-''' OLD SET_ROLE 
-def set_role():
-    """Set the role using stdin stream."""
-    role = input(
-        "*** Enter 'R' for receiver role.\n"
-        "*** Enter 'T' for transmitter role\n"
-        "*** Enter 'Q' to quit example.\n"
-    ).strip().upper()
-
-    if role == 'R':
-        slave()
-        return True
-    elif role == 'T':
-        path = '/media/usb'  # Ruta completa al archivo en el directorio /mnt/usbdrive
-        filelist = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
-        if not os.path.exists(path):
-            print(f"Path not found: {path}")
-            return True
-        if len(filelist) == 0:
-            print(f"No files in: {path}")
-            return True
-        master(filelist)
-        return True
-    elif role == 'Q':
-        nrf.power = False
-        return False
-    else:
-        print(role, "is an unrecognized input. Please try again.")
-        return set_role()
-'''
-
 def set_role(): 
     """Set the role using GPIO switches."""
     # Switch 2 Tx or Rx
@@ -324,14 +285,20 @@ if __name__ == "__main__":
         num_devices = len(df)-1
         time.sleep(1)
     print("USB unit connected")
-    # # Assumeixo que aquí ja ha trobat el USB
-    # GPIO.output(USB_LED, GPIO.HIGH)    
-    try:
-        set_role()
-    except KeyboardInterrupt:
-        print(" Keyboard Interrupt detected. Powering down radio...")
-        nrf.power = False
-        GPIO.cleanup()
-        reset_leds()
+    # Switch ON/OFF is here: 
+    while True: 
+        switch_onoff_state = GPIO.input(ONOFF_SWITCH)
+        if switch_onoff_state == True:
+            try:
+                set_role()
+            except KeyboardInterrupt:
+                print(" Keyboard Interrupt detected. Powering down radio...")
+                nrf.power = False
+                GPIO.cleanup()
+                reset_leds()
+        else: 
+            print("Switch is off. Waiting for it to be turned on...")
+            time.sleep(0.1)  
+            break
 else:
     print("    Run slave() on receiver\n    Run master() on transmitter")
