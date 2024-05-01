@@ -217,10 +217,6 @@ def slave(timeout=1000):
     GPIO.output(RECEIVER_LED, GPIO.HIGH)
     message = []  # list to accumulate message chunks
     start = time.monotonic()
-
-    #vaciar buffers
-    fifo_state_rx = nrf.fifo(False)
-    print(fifo_state_rx)
     '''
     while fifo_state_rx == 1:
         nrf.send(b'hola')
