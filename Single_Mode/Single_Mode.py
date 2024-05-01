@@ -115,7 +115,7 @@ def blink_failure_leds(N):
         GPIO.output(RECEIVER_LED, GPIO.LOW)
         time.sleep(0.5)
 
-def master(filelist):
+def master(filelist, count=5):
     nrf.listen = True
     nrf.listen = False  # ensure the nRF24L01 is in TX mode
     GPIO.output(TRANSMITTER_LED, GPIO.HIGH)
@@ -132,19 +132,9 @@ def master(filelist):
         fifo_state_rx = nrf.fifo(False)
         fifo_state_tx = nrf.fifo(True)
     '''
-    #vaciar buffers
-    '''
-    fifo_state_tx = nrf.fifo(True)
-    while fifo_state_tx == 1:
+    for i in range(10):
         nrf.send(b'hola')
         nrf.read()
-        fifo_state_tx = nrf.fifo(True)
-    '''
-    
-    for i in range(100):
-        nrf.send(b'hola')
-        nrf.read()
-    
     fifo_state_tx = nrf.fifo(True)
     fifo_state_rx = nrf.fifo(False)
     print('fifo state TX:',fifo_state_tx)
@@ -165,16 +155,20 @@ def master(filelist):
 
     chunks = [message[i:i + 32] for i in range(0, len(message), 32)]
     
-    state = nrf.send(b'Ready')
+    result = nrf.send(b'Ready')
     print('fifo state TX1:',fifo_state_tx)
-    while not state:
+    print('fifo state RX1:',fifo_state_rx)
+    while not result:
         time.sleep(0.1)
-        state = nrf.send(b'Ready')
+        print('Receiver not ready')
+        result = nrf.send(b'Ready')
 
     print("Receiver is ready to receive.")
     
-    for chunk in enumerate(chunks):
+    for i, chunk in enumerate(chunks):
+        print('NUMERO', i)
         print('fifo state TX2:',fifo_state_tx)
+        print('fifo state RX2:',fifo_state_rx)
         result = nrf.send(chunk)  # Enviar el chunk
         # received_payload = nrf.read()  # Leer el payload recibido
         if result:  # Si se recibe el ACK esperado
@@ -218,17 +212,12 @@ def slave(timeout=1000):
     GPIO.output(RECEIVER_LED, GPIO.HIGH)
     message = []  # list to accumulate message chunks
     start = time.monotonic()
-    '''
-    while fifo_state_rx == 1:
-        nrf.send(b'hola')
-        nrf.read()
-        print(fifo_state_rx)
-        fifo_state_rx = nrf.fifo(False)
-    '''
+
     print("Waiting for start message...")
     received_payload = nrf.read()  # Leer el mensaje entrante
     while received_payload != b'Ready':
         received_payload = nrf.read()
+        print("Waiting for start message...")
 
     print("Waiting for incoming message...")
     while (time.monotonic() - start) < timeout:
@@ -334,7 +323,6 @@ def set_role():
 # Canviar l'ordre, primer espera al primer switch per si es network mode o no, després si NO es 
 # Network Mode 
 if __name__ == "__main__":
-    reset_leds()
     print("Waiting for USB drive...")
     # Start the USB LED thread
     t = threading.Thread(target=USB_led)
@@ -350,9 +338,9 @@ if __name__ == "__main__":
     try:
         set_role()
     except KeyboardInterrupt:
-        reset_leds()
         print(" Keyboard Interrupt detected. Powering down radio...")
         nrf.power = False
         GPIO.cleanup()
+        reset_leds()
 else:
     print("    Run slave() on receiver\n    Run master() on transmitter")
