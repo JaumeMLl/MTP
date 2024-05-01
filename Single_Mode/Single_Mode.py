@@ -97,13 +97,13 @@ def reset_leds():
     GPIO.output(NM_LED, GPIO.LOW)
     GPIO.output(USB_LED, GPIO.LOW)
 
-def blink_success_leds(N):
+def blink_success_leds(N, led1, led2):
     for i in range(N):
-        GPIO.output(CONNECTION_LED, GPIO.HIGH)
-        GPIO.output(NM_LED, GPIO.HIGH)
+        GPIO.output(led1, GPIO.HIGH)
+        GPIO.output(led2, GPIO.HIGH)
         time.sleep(0.5)
-        GPIO.output(CONNECTION_LED, GPIO.LOW)
-        GPIO.output(NM_LED, GPIO.LOW)
+        GPIO.output(led1, GPIO.LOW)
+        GPIO.output(led2, GPIO.LOW)
         time.sleep(0.5)
 
 def blink_failure_leds(N):
@@ -184,7 +184,7 @@ def master(filelist):
     sent_successfully = nrf.send(ack_payload)  # Enviar el mensaje de confirmación
     if sent_successfully:
         print("Confirmation message sent successfully.")
-        blink_success_leds(10)
+        blink_success_leds(10, CONNECTION_LED, NM_LED)
     else:
         print("Failed to send confirmation message.")
         sent_successfully = nrf.send(ack_payload)
@@ -248,7 +248,7 @@ def slave(timeout=1000):
 
     if output == 0:
         print("File decompressed successfully")
-        blink_success_leds(10)
+        blink_success_leds(10, CONNECTION_LED, NM_LED)
     else:
         print("Error decompressing the file")
         blink_failure_leds(10)
@@ -264,6 +264,8 @@ def slave(timeout=1000):
         for txt_file in txt_files:
             shutil.copy(txt_file, '/media/usb/')
             print(f"Received message '{txt_file}' also stored in '/media/usb/'")
+            blink_success_leds(10, USB_LED, None)
+            reset_leds()
     except Exception as e:
         print(f"Failed to save the message in '/media/usb'. Error: {e}")
 
