@@ -218,6 +218,13 @@ def slave(timeout=1000):
     message = []  # list to accumulate message chunks
     start = time.monotonic()
 
+    #vaciar buffers
+    fifo_state_rx = nrf.fifo(False)
+    while fifo_state_rx == 1:
+        nrf.send(b'hola')
+        nrf.read()
+        fifo_state_rx = nrf.fifo(False)
+
     print("Waiting for start message...")
     received_payload = nrf.read()  # Leer el mensaje entrante
     while received_payload != b'Ready':
@@ -327,7 +334,7 @@ def set_role():
 # Canviar l'ordre, primer espera al primer switch per si es network mode o no, després si NO es 
 # Network Mode 
 if __name__ == "__main__":
-    #reset_leds()
+    reset_leds()
     print("Waiting for USB drive...")
     # Start the USB LED thread
     t = threading.Thread(target=USB_led)
