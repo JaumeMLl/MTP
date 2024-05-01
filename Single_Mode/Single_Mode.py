@@ -223,6 +223,7 @@ def slave(timeout=1000):
     while fifo_state_rx == 1:
         nrf.send(b'hola')
         nrf.read()
+        print(fifo_state_rx)
         fifo_state_rx = nrf.fifo(False)
 
     print("Waiting for start message...")
