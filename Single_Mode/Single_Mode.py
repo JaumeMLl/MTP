@@ -319,7 +319,7 @@ def set_role():
 # Canviar l'ordre, primer espera al primer switch per si es network mode o no, després si NO es 
 # Network Mode 
 if __name__ == "__main__":
-    reset_leds()
+    #reset_leds()
     print("Waiting for USB drive...")
     # Start the USB LED thread
     t = threading.Thread(target=USB_led)
