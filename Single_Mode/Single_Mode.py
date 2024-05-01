@@ -60,10 +60,10 @@ nrf = RF24(SPI_BUS, CSN_PIN, CE_PIN)
 nrf.pa_level = 0 # 0, -12, -18
 ## to enable the custom ACK payload feature
 nrf.ack = False  # False disables again
-#nrf.auto_ack = True
+nrf.auto_ack = True
 nrf.flush_rx()
 nrf.flush_tx()
-#nrf.arc = 15 #Number of retransmits, default is 3. Int. Value: [0, 15]
+nrf.arc = 15 #Number of retransmits, default is 3. Int. Value: [0, 15]
 # Set channel, from 1 to 125
 nrf.channel = 1
 nrf.data_rate = 250 # RF24_250KBPS (250kbps), RF24_1MBPS (1Mbps), RF24_2MBPS (2Mbps)
@@ -133,7 +133,7 @@ def master(filelist):
         fifo_state_tx = nrf.fifo(True)
     '''
     #vaciar buffers
-    for i in range(10):
+    for i in range(100):
         nrf.send(b'hola')
         nrf.read()
     fifo_state_tx = nrf.fifo(True)
