@@ -115,7 +115,7 @@ def blink_failure_leds(N):
         GPIO.output(RECEIVER_LED, GPIO.LOW)
         time.sleep(0.5)
 
-def master(filelist, count=5):
+def master(filelist):
     nrf.listen = True
     nrf.listen = False  # ensure the nRF24L01 is in TX mode
     GPIO.output(TRANSMITTER_LED, GPIO.HIGH)
@@ -138,7 +138,6 @@ def master(filelist, count=5):
     fifo_state_tx = nrf.fifo(True)
     fifo_state_rx = nrf.fifo(False)
     print('fifo state TX:',fifo_state_tx)
-    print('fifo state RX:',fifo_state_rx)
     filepath = filelist[0]
     print(f"Sending file: {filepath}")
     
@@ -157,18 +156,13 @@ def master(filelist, count=5):
     
     result = nrf.send(b'Ready')
     print('fifo state TX1:',fifo_state_tx)
-    print('fifo state RX1:',fifo_state_rx)
     while not result:
         time.sleep(0.1)
-        print('Receiver not ready')
         result = nrf.send(b'Ready')
 
     print("Receiver is ready to receive.")
     
-    for i, chunk in enumerate(chunks):
-        print('NUMERO', i)
-        print('fifo state TX2:',fifo_state_tx)
-        print('fifo state RX2:',fifo_state_rx)
+    for chunk in chunks:
         result = nrf.send(chunk)  # Enviar el chunk
         # received_payload = nrf.read()  # Leer el payload recibido
         if result:  # Si se recibe el ACK esperado
@@ -183,6 +177,7 @@ def master(filelist, count=5):
 
         # Show percentage of message sent
         print(f"Percentage of message sent: {round((chunks.index(chunk)+1)/len(chunks)*100, 2)}%")
+    
     print("Message transmission complete.")
     ack_payload = b'FINALTRANSMISSIO'  # Mensaje de finalización
     nrf.listen = False  # Dejar de escuchar para poder enviar
@@ -217,7 +212,7 @@ def slave(timeout=1000):
     received_payload = nrf.read()  # Leer el mensaje entrante
     while received_payload != b'Ready':
         received_payload = nrf.read()
-        print("Waiting for start message...")
+        
 
     print("Waiting for incoming message...")
     while (time.monotonic() - start) < timeout:
@@ -284,14 +279,14 @@ def set_role():
     if switch_nm_state:  # If GPIO pin 3 is on
         print("Network mode selected.")
         print("Switch NM state:", switch_nm_state)
-        print("Switch TXRX state:", switch_txrx_state)
+        print("Switch TX/RX state:", switch_txrx_state)
         GPIO.output(NM_LED, GPIO.HIGH)
         return False  # Exit the function
     elif not switch_nm_state and switch_txrx_state:  # If GPIO pin 3 is off and GPIO pin 2 is on
         GPIO.output(NM_LED, GPIO.LOW)
         print("Transmitter role selected.")
         print("Switch NM state:", switch_nm_state)
-        print("Switch TX state:", switch_txrx_state)
+        print("Switch TX/RX state:", switch_txrx_state)
         # set TX address of RX node into the TX pipe
         nrf.open_tx_pipe(address[0])  # always uses pipe 0
         # set RX address of TX node into an RX pipe
@@ -323,6 +318,7 @@ def set_role():
 # Canviar l'ordre, primer espera al primer switch per si es network mode o no, després si NO es 
 # Network Mode 
 if __name__ == "__main__":
+    reset_leds()
     print("Waiting for USB drive...")
     # Start the USB LED thread
     t = threading.Thread(target=USB_led)
@@ -337,6 +333,7 @@ if __name__ == "__main__":
  
     try:
         set_role()
+        reset_leds()
     except KeyboardInterrupt:
         print(" Keyboard Interrupt detected. Powering down radio...")
         nrf.power = False
