@@ -186,6 +186,7 @@ def master(filelist):
         blink_success_leds(10, CONNECTION_LED, NM_LED)
         reset_leds()
     else:
+#aqui es el unico sitio donde se podria hacer retransmi sin liarla demasiado
         print("Failed to send confirmation message.")
         sent_successfully = nrf.send(ack_payload)
         while not sent_successfully:
