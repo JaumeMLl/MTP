@@ -160,7 +160,6 @@ def master(filelist):
     print('fifo state TX1:',fifo_state_tx)
     while not result:
         time.sleep(0.1)
-        print('Receiver not ready')
         result = nrf.send(b'Ready')
 
     print("Receiver is ready to receive.")
@@ -215,7 +214,6 @@ def slave(timeout=1000):
     received_payload = nrf.read()  # Leer el mensaje entrante
     while received_payload != b'Ready':
         received_payload = nrf.read()
-        print("Waiting for start message...")
 
     print("Waiting for incoming message...")
     while (time.monotonic() - start) < timeout:
