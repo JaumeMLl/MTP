@@ -134,7 +134,7 @@ def master(filelist):
     '''
     #vaciar buffers
     fifo_state_tx = nrf.fifo(True)
-    while fifo_state_tx is 1:
+    while fifo_state_tx == 1:
         nrf.send(b'hola')
         nrf.read()
 
