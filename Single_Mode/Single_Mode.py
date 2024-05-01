@@ -116,12 +116,15 @@ def master(filelist, count=5):
     GPIO.output(TRANSMITTER_LED, GPIO.HIGH)
     nrf.flush_tx()
     nrf.flush_rx()  # Vaciar el búfer de recepción
-    fifo_state = nrf.fifo()
-    while fifo_state != 2:
+    fifo_state_tx = nrf.fifo(tx=True)
+    fifo_state_rx = nrf.fifo(tx=False)
+    while fifo_state_tx != 2 and fifo_state_rx != 2:
         nrf.flush_tx()
         nrf.flush_rx()  # Vaciar el búfer de recepción
-        print('fifo state:',fifo_state)
-        fifo_state = nrf.fifo()
+        print('fifo state TX:',fifo_state_tx)
+        print('fifo state RX:',fifo_state_rx)
+        fifo_state_rx = nrf.fifo(tx=False)
+        fifo_state_tx = nrf.fifo(tx=True)
     filepath = filelist[0]
     print(f"Sending file: {filepath}")
     
