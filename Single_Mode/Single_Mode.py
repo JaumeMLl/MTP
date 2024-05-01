@@ -114,7 +114,7 @@ def blink_failure_leds(N):
 def master(filelist, count=5):
     nrf.listen = False  # ensure the nRF24L01 is in TX mode
     GPIO.output(TRANSMITTER_LED, GPIO.HIGH)
-    
+    nrf.flush_rx()  # Vaciar el búfer de recepción
     filepath = filelist[0]
     
     print(f"Sending file: {filepath}")
@@ -131,17 +131,14 @@ def master(filelist, count=5):
     message = open(filepath, 'rb').read() + b'separaciofitxer' + bytes(filepath.split('/')[-1], 'utf-8')
 
     chunks = [message[i:i + 32] for i in range(0, len(message), 32)]
-     # test the connection, wait for the first ack
-    result = nrf.send(b'INICI')  # Enviar el mensaje de inicio
-    print('Valor de result:', result)
-    while not result:
-        result = nrf.send(b'INICI')
+    nrf.send(b'Ready')
+    while not nrf.available():
         time.sleep(0.1)
-    print("Connection established. Sending message.")
-    result = False
-
+        print('No receiver')
+    print("Receiver is ready to receive.")
+    
     for i, chunk in enumerate(chunks):
-        print('Chunk number:', i)
+        print('NUMERO', i)
         result = nrf.send(chunk)  # Enviar el chunk
         # received_payload = nrf.read()  # Leer el payload recibido
         if result:  # Si se recibe el ACK esperado
@@ -181,24 +178,20 @@ def slave(timeout=1000):
     start = time.monotonic()
 
     print("Waiting for incoming message...")
-    received_payload = nrf.read() 
-    while received_payload != b'INICI':
-        received_payload = nrf.read()
-        print("Waiting for start message...")
-    
-    GPIO.output(CONNECTION_LED, GPIO.LOW)
-    if nrf.available():
-        received_payload = nrf.read()  # Leer el mensaje entrante
-        if received_payload == b'FINALTRANSMISSIO':
-            # Mensaje transmission complete
-            print("Message transmission complete.")
-            #break
-        else:
-            # print(f'Received payload: {received_payload}')
-            message.append(received_payload)
-            GPIO.output(CONNECTION_LED, GPIO.HIGH)
+    while (time.monotonic() - start) < timeout:
+        GPIO.output(CONNECTION_LED, GPIO.LOW)
+        if nrf.available():
+            received_payload = nrf.read()  # Leer el mensaje entrante
+            if received_payload == b'FINALTRANSMISSIO':
+                # Mensaje transmission complete
+                print("Message transmission complete.")
+                break
+            else:
+                # print(f'Received payload: {received_payload}')
+                message.append(received_payload)
+                GPIO.output(CONNECTION_LED, GPIO.HIGH)
 
-        start = time.monotonic()  # Restablecer el temporizador
+            start = time.monotonic()  # Restablecer el temporizador
             
     # Concatenar y procesar el mensaje completo recibido, si es necesario
     complete_message = b''.join(message)
