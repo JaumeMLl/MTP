@@ -131,10 +131,11 @@ def master(filelist, count=5):
     message = open(filepath, 'rb').read() + b'separaciofitxer' + bytes(filepath.split('/')[-1], 'utf-8')
 
     chunks = [message[i:i + 32] for i in range(0, len(message), 32)]
-    canal = nrf.send(b'canal')
-    while not canal:
-        canal = nrf.send(b'canal')
-        print('hola canal')
+    #canal = nrf.send(b'canal')
+    while not nrf.available():
+        time.sleep(0.1)
+        print('No receiver')
+    print("Receiver is ready to receive.")
     result = False
     for i, chunk in enumerate(chunks):
         print('NUMERO', i)
