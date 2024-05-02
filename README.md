@@ -1,5 +1,4 @@
 # MTP - Equipo C
-<<<<<<< HEAD
 
 ## Pins
 
@@ -86,10 +85,6 @@ En caso de que no te funcione podria ser fallo de los drivers.
 Intenta con este video que complementa el tutorial anterior: https://www.youtube.com/watch?v=XaTmG708Mss
 
 ## Instrucciones para Crear la SSH Key para GitHub
-=======
-# Instrucciones para Crear la SSH Key para GitHub
->>>>>>> 0ee453c5ed5b5a67ecded36ce51ef372dba4969e
-
 Para crear la clave SSH de GitHub, sigue estos pasos en la terminal:
 
 1. Genera una nueva clave SSH utilizando tu correo electrónico como etiqueta:
@@ -112,18 +107,16 @@ Para crear la clave SSH de GitHub, sigue estos pasos en la terminal:
    En el campo "Title", añade un nombre descriptivo para tu llave. Por ejemplo, "Raspberry Pi key".
    En el campo "Key", pega la llave SSH pública que copiaste anteriormente.
    Haz clic en Add SSH key.
-<<<<<<< HEAD
 7. Finalmente, esto te confirmará si está bien creada la clave SSH:
    ```bash 
    ssh -T git@github.com
-=======
  7. Finalmente, esto te confirmará si está bien creada la clave SSH:
    ```bash 
    ssh -T git@github.com
    ```
 
 
-# Versiones
+## Versiones
 
 En la carpeta CircuitPython_nRF24L01 encontrarás los ejemplos originales para realizar los tests más simples.
 
@@ -133,7 +126,7 @@ En la carpeta QM están las tres versiones del Quick Mode (QM):
 - V1: Se añaden acks. Modificar count con el numero de reintentos deseados
 - V2: Se lee el fichero mtp.txt desde mnt/usbdrive donde se encuentra el usb, se envia su contenido (con acks para cada fragmento) y en el receptor se crea el .txt en el directorio de trabajo y en el directorio mnt/usbdrive donde se encuentra el usb del receptor
 
-# Información Adicional
+## Información Adicional
 
 Para el directorio del usb con permisos de escritura (y de lectura) 
 
@@ -150,10 +143,7 @@ Para el directorio del usb con permisos de escritura (y de lectura)
    sudo mount -t vfat -o uid=pi,gid=pi /dev/sda1 /mnt/usbdrive
    ```
 
-
->>>>>>> 0ee453c5ed5b5a67ecded36ce51ef372dba4969e
-
-# Fer que s'executi el .py directament al obrir la raspy
+## Fer que s'executi el .py directament al obrir la raspy
 
 1. Crear un file systemd --> **my_script** es pot canviar 
 
@@ -202,7 +192,7 @@ WantedBy=multi-user.target
 `sudo reboot`
 
 
-# Canals de NRF2401
+## Canals de NRF2401
 Referència: https://lastminuteengineers.com/nrf24l01-arduino-wireless-communication/#rf-channel-frequency
 Hi ha una imatge on mostra el següent: 
 
