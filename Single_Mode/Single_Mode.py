@@ -241,7 +241,7 @@ def slave(timeout=1000):
     # Concatenar y procesar el mensaje completo recibido, si es necesario
     complete_message = b''.join(message)
     print(f"Complete message received: {complete_message}")
-    logging.info(f"Complete message received: {complete_message}")
+    #logging.info(f"Complete message received: {complete_message}")
 
     filename = complete_message.split(b'separaciofitxer')[-1].decode('utf-8')
     long_desc = len(filename) + len(b'separaciofitxer')
