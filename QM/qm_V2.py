@@ -15,7 +15,7 @@ try:  # on Linux
 
     SPI_BUS = spidev.SpiDev()  # for a faster interface on linux
     CSN_PIN = 0  # use CE0 on default bus (even faster than using any pin)
-    CE_PIN = DigitalInOut(board.D25)  # using pin gpio22 (BCM numbering)
+    CE_PIN = DigitalInOut(board.D23)  # using pin gpio22 (BCM numbering)
 
 except ImportError:  # on CircuitPython only
     # using board.SPI() automatically selects the MCU's
@@ -35,9 +35,10 @@ nrf = RF24(SPI_BUS, CSN_PIN, CE_PIN)
 #                21 = bus 2, CE1  # enable SPI bus 1 prior to running this
 
 # Change the Power Amplifier level
-nrf.pa_level = -12
+nrf.pa_level = 0
 ## to enable the custom ACK payload feature
-nrf.ack = True  # False disables again
+nrf.ack = False  # False disables again
+nrf.auto_ack = True
 
 # addresses needs to be in a buffer protocol object (bytearray)
 address = [b"1Node", b"2Node"]
@@ -67,7 +68,7 @@ def master(filelist, count=5):
     #     file = open(filepath,'rb')
     #     message += file.read()
     
-    filepath = filelist[-1]
+    filepath = filelist[0]
     # This line stores the filename in the message
     message = open(filepath, 'rb').read() + b'separaciofitxer' + bytes(filepath.split('/')[-1], 'utf-8')
 
