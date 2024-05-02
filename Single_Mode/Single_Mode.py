@@ -5,7 +5,6 @@ from digitalio import DigitalInOut
 import os
 import subprocess
 import RPi.GPIO as GPIO
-import threading
 import numpy as np
 import shutil
 
@@ -80,16 +79,26 @@ nrf.open_tx_pipe(address[0])  # always uses pipe 0
 nrf.open_rx_pipe(1, address[1])  # using pipe 1
 
 def USB_led():
+    # Check number of files in the USB drive
+    nfiles_old = os.system("ls /media/usb | wc -l")
     while True:
         df = subprocess.check_output("lsusb")
         df = df.split(b'\n')
         num_devices = len(df)-1
-        if num_devices < 2:
-            GPIO.output(USB_LED, GPIO.LOW)
-            time.sleep(0.5)
-        else:
+        if num_devices >= 2 and os.system("ls /media/usb | wc -l") != 0:
             GPIO.output(USB_LED, GPIO.HIGH)
             time.sleep(0.5)
+        else:
+            GPIO.output(USB_LED, GPIO.LOW)
+            time.sleep(0.5)
+        if nfiles_old > os.system("ls /media/usb | wc -l"):
+            print("New file detected in USB drive")
+            nfiles_old = os.system("ls /media/usb | wc -l")
+            for i in range(50):
+                GPIO.output(USB_LED, GPIO.HIGH)
+                time.sleep(0.1)
+                GPIO.output(USB_LED, GPIO.LOW)
+                time.sleep(0.1)
         
 def reset_leds():
     """Turn off all LEDs."""
@@ -99,13 +108,13 @@ def reset_leds():
     GPIO.output(NM_LED, GPIO.LOW)
     GPIO.output(USB_LED, GPIO.LOW)
 
-def blink_success_leds(N, led1, led2):
+def blink_success_leds(N):
     for i in range(N):
-        GPIO.output(led1, GPIO.HIGH)
-        GPIO.output(led2, GPIO.HIGH)
+        GPIO.output(CONNECTION_LED, GPIO.HIGH)
+        GPIO.output(NM_LED, GPIO.HIGH)
         time.sleep(0.5)
-        GPIO.output(led1, GPIO.LOW)
-        GPIO.output(led2, GPIO.LOW)
+        GPIO.output(CONNECTION_LED, GPIO.LOW)
+        GPIO.output(NM_LED, GPIO.LOW)
         time.sleep(0.5)
 
 def blink_failure_leds(N):
@@ -203,7 +212,7 @@ def master(filelist):
     sent_successfully = nrf.send(ack_payload)  # Enviar el mensaje de confirmación
     if sent_successfully:
         print("Confirmation message sent successfully.")
-        blink_success_leds(10, CONNECTION_LED, NM_LED)
+        blink_success_leds(10)
         reset_leds()
     else:
 #aqui es el unico sitio donde se podria hacer retransmi sin liarla demasiado
@@ -357,16 +366,7 @@ def set_role():
 if __name__ == "__main__":
     reset_leds()
     print("Waiting for USB drive...")
-    # Start the USB LED thread
-    t = threading.Thread(target=USB_led)
-    t.start()
-    num_devices = 0
-    while num_devices < 2:
-        df = subprocess.check_output("lsusb")
-        df = df.split(b'\n')
-        num_devices = len(df)-1
-        time.sleep(1)
-    print("USB unit connected")
+    USB_led()
     try:
         set_role()
     except KeyboardInterrupt:
