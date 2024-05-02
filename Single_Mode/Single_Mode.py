@@ -77,27 +77,23 @@ nrf.open_tx_pipe(address[0])  # always uses pipe 0
 nrf.open_rx_pipe(1, address[1])  # using pipe 1
 
 def USB_led():
-    # Check number of files in the USB drive
-    nfiles_old = os.system("ls /media/usb | wc -l")
+   # Check number of files in the USB drive
+    usb_path = '/media/usb'
     while True:
-        df = subprocess.check_output("lsusb")
-        df = df.split(b'\n')
-        num_devices = len(df)-1
-        if num_devices >= 2 and os.system("ls /media/usb | wc -l") != 0:
+        num_devices = len(os.listdir('/dev/bus/usb'))  # Checking USB devices
+        if num_devices >= 2:
             GPIO.output(USB_LED, GPIO.HIGH)
             time.sleep(0.5)
         else:
             GPIO.output(USB_LED, GPIO.LOW)
             time.sleep(0.5)
-        if nfiles_old > os.system("ls /media/usb | wc -l"):
-            print("New file detected in USB drive")
-            nfiles_old = os.system("ls /media/usb | wc -l")
-            for i in range(50):
-                GPIO.output(USB_LED, GPIO.HIGH)
-                time.sleep(0.1)
-                GPIO.output(USB_LED, GPIO.LOW)
-                time.sleep(0.1)
-        
+
+def newfile_led():
+    GPIO.output(USB_LED, GPIO.HIGH)
+    time.sleep(0.1)
+    GPIO.output(USB_LED, GPIO.LOW)
+    time.sleep(0.1)
+
 def reset_leds():
     """Turn off all LEDs."""
     GPIO.output(TRANSMITTER_LED, GPIO.LOW)
@@ -292,7 +288,7 @@ def slave(timeout=1000):
 
     if output == 0:
         print("File decompressed successfully")
-        blink_success_leds(10, CONNECTION_LED, NM_LED)
+        blink_success_leds(10)
     else:
         print("Error decompressing the file")
         blink_failure_leds(10)
@@ -308,6 +304,7 @@ def slave(timeout=1000):
         for txt_file in txt_files:
             shutil.copy(txt_file, '/media/usb/')
             print(f"Received message '{txt_file}' also stored in '/media/usb/'")
+            reset_leds()
             #blink_success_leds(10, USB_LED, USB_LED) 
             #reset_leds()
     except Exception as e:
