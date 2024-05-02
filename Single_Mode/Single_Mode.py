@@ -119,7 +119,24 @@ def blink_failure_leds(N):
 
 def master(filelist):
     nrf.listen = True
-    nrf.listen = False  # ensure the nRF24L01 is in TX mode
+    print('Waiting for confirmation from slave')
+    while True:
+        received_payload = nrf.read()
+        if received_payload == b'Slave Initialization Request':
+            print("Received initialization request from slave.")
+            
+            # Set the nrf to sender mode
+            nrf.listen = False
+            
+            # Send initialization confirmation to slave
+            sent_successfully = nrf.send(b'Slave Initialized')
+            if sent_successfully:
+                print("Sent initialization confirmation to slave.")
+                break
+            else:
+                print("Failed to send initialization confirmation.")
+                time.sleep(0.5)
+
     GPIO.output(TRANSMITTER_LED, GPIO.HIGH)
     '''
     nrf.flush_tx()
@@ -133,12 +150,12 @@ def master(filelist):
         print('fifo state RX:',fifo_state_rx)
         fifo_state_rx = nrf.fifo(False)
         fifo_state_tx = nrf.fifo(True)
-    '''
     for i in range(10):
         nrf.send(b'hola')
         nrf.read()
     fifo_state_tx = nrf.fifo(True)
     print('fifo state TX:',fifo_state_tx)
+    '''
     filepath = filelist[0]
     print(f"Sending file: {filepath}")
     
@@ -154,7 +171,7 @@ def master(filelist):
     message = open(filepath, 'rb').read() + b'separaciofitxer' + bytes(filepath.split('/')[-1], 'utf-8')
 
     chunks = [message[i:i + 32] for i in range(0, len(message), 32)]
-    
+    '''
     result = nrf.send(b'Ready')
     print('fifo state TX1:',fifo_state_tx)
     while not result:
@@ -162,6 +179,7 @@ def master(filelist):
         result = nrf.send(b'Ready')
 
     print("Receiver is ready to receive.")
+    '''
     
     for chunk in chunks:
         result = nrf.send(chunk)  # Enviar el chunk
@@ -200,6 +218,7 @@ def master(filelist):
 
 
 def slave(timeout=1000):
+    '''
     nrf.listen = True  # put radio into RX mode and power up
     nrf.flush_tx()
     nrf.flush_rx()  # Vaciar el búfer de recepción
@@ -207,6 +226,21 @@ def slave(timeout=1000):
     nrf.flush_rx()  # Vaciar el búfer de recepción
     nrf.flush_tx()
     nrf.flush_rx()  # Vaciar el búfer de recepción
+    '''
+    nrf.listen = False
+    initialized = False
+    while not initialized: 
+        nrf.send(b'RX Initialization Request')
+        print("RX Initialization Request sent")
+        
+        #Check for confirmation from master
+        receivedrx= nrf.read()
+        if receivedrx == b'RX Initialized': 
+            initialized = True
+            print('RX Initialized')
+        else:
+            time.sleep(0.5)
+    nrf.listen = True
     GPIO.output(RECEIVER_LED, GPIO.HIGH)
     message = []  # list to accumulate message chunks
     start = time.monotonic()
@@ -272,11 +306,6 @@ def slave(timeout=1000):
     except Exception as e:
         print(f"Failed to save the message in '/media/usb'. Error: {e}")
 
-<<<<<<< HEAD
-=======
-
-
->>>>>>> origin/SimpleMode
 def set_role(): 
     """Set the role using GPIO switches."""
     # Switch 2 Tx or Rx
@@ -308,7 +337,8 @@ def set_role():
             return True
         if len(filelist) == 0:
             print(f"No files in: {path}")
-            return True        
+            return True 
+        # Wait for OK from the receiver       
         master(filelist)
         return True
     else:  # If neither GPIO pin 2 nor GPIO pin 3 is on
@@ -337,20 +367,15 @@ if __name__ == "__main__":
         num_devices = len(df)-1
         time.sleep(1)
     print("USB unit connected")
-    # Switch ON/OFF is here: 
-    while True: 
-        switch_onoff_state = GPIO.input(ONOFF_SWITCH)
-        if switch_onoff_state == True:
-            try:
-                set_role()
-            except KeyboardInterrupt:
-                print(" Keyboard Interrupt detected. Powering down radio...")
-                nrf.power = False
-                GPIO.cleanup()
-                reset_leds()
-        else: 
-            print("Switch is off. Waiting for it to be turned on...")
-            time.sleep(0.1)  
-            break
+    try:
+        set_role()
+    except KeyboardInterrupt:
+        print(" Keyboard Interrupt detected. Powering down radio...")
+        nrf.power = False
+        GPIO.cleanup()
+        reset_leds()
+    else: 
+        print("Switch is off. Waiting for it to be turned on...")
+        time.sleep(0.1)  
 else:
     print("    Run slave() on receiver\n    Run master() on transmitter")
