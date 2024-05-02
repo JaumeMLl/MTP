@@ -54,6 +54,9 @@ GPIO.setup(USB_LED, GPIO.OUT)
 GPIO.setup(NM_SWITCH, GPIO.IN)
 GPIO.setup(TXRX_SWITCH, GPIO.IN)
 
+FILE_REQUEST_MSG = b"FileRequestMsg"
+REQUEST_ACC_MSG = b"RequestAccMsg"
+
 # initialize the nRF24L01 on the spi bus object
 nrf = RF24(SPI_BUS, CSN_PIN, CE_PIN)
 # On Linux, csn value is a bit coded
@@ -120,6 +123,38 @@ def blink_failure_leds(N):
         GPIO.output(RECEIVER_LED, GPIO.LOW)
         time.sleep(0.5)
 
+def wait_for_desired_message(desired_message, timeout):
+    """
+    Waits until it receives the message matching the desired value on the given pipe, or until the timeout_ms expires.
+    
+    Parameters:
+    - desired_message: The specific message expected to be received.
+
+    Returns:
+    - True if the desired_message is received within the timeout period, False otherwise.
+    """
+    nrf.listen = True  # put radio into RX mode and power up
+
+    start = time.monotonic()
+
+    while (time.monotonic() - start) < timeout:
+        if nrf.available():
+            # Read the received message
+            received_message = []
+            received_message = nrf.read()
+            print(f"Received Message: {received_message}")
+
+            # Check if the responder ID matches and the actual message is the desired one
+            if received_message == desired_message:
+                print(f"Desired Message {desired_message} received")
+                return True  # Message received successfully
+            else:
+                print("Message not recognized")
+        time.sleep(0.1)  # Wait for a short time before checking again
+        
+    print(f"Desired Message {desired_message} NOT received")
+    return False
+
 def master(filelist):
     nrf.listen = True
     nrf.listen = False  # ensure the nRF24L01 is in TX mode
@@ -156,113 +191,142 @@ def master(filelist):
     # This line stores the filename in the message
     message = open(filepath, 'rb').read() + b'separaciofitxer' + bytes(filepath.split('/')[-1], 'utf-8')
 
-    chunks = [message[i:i + 32] for i in range(0, len(message), 32)]
-    
-    result = nrf.send(b'Ready')
-    print('fifo state TX1:',fifo_state_tx)
-    while not result:
-        time.sleep(0.1)
+    while True:
+        print("Hola de nuevo")
+        chunks = [message[i:i + 32] for i in range(0, len(message), 32)]
+        
         result = nrf.send(b'Ready')
+        print('fifo state TX1:',fifo_state_tx)
+        while not result:
+            time.sleep(0.1)
+            result = nrf.send(b'Ready')
 
-    print("Receiver is ready to receive.")
-    
-    for chunk in chunks:
-        result = nrf.send(chunk)  # Enviar el chunk
-        # received_payload = nrf.read()  # Leer el payload recibido
-        if result:  # Si se recibe el ACK esperado
-            print("ACK received. Sending next chunk.")
-            GPIO.output(CONNECTION_LED, GPIO.HIGH)
+        print("Receiver is ready to receive.")
+        
+        for chunk in chunks:
+            result = nrf.send(chunk)  # Enviar el chunk
+            # received_payload = nrf.read()  # Leer el payload recibido
+            if result:  # Si se recibe el ACK esperado
+                print("ACK received. Sending next chunk.")
+                GPIO.output(CONNECTION_LED, GPIO.HIGH)
+            else:
+                while not result:
+                    print("No ACK received. Retrying...")
+                    result = nrf.send(chunk)
+                    GPIO.output(CONNECTION_LED, GPIO.LOW)
+                    #time.sleep(0.5)
+
+            # Show percentage of message sent
+            print(f"Percentage of message sent: {round((chunks.index(chunk)+1)/len(chunks)*100, 2)}%")
+        
+        print("Message transmission complete.")
+        ack_payload = b'FINALTRANSMISSIO'  # Mensaje de finalización
+        nrf.listen = False  # Dejar de escuchar para poder enviar
+        sent_successfully = nrf.send(ack_payload)  # Enviar el mensaje de confirmación
+        if sent_successfully:
+            print("Confirmation message sent successfully.")
+            blink_success_leds(10, CONNECTION_LED, NM_LED)
+            reset_leds()
         else:
-            while not result:
-                print("No ACK received. Retrying...")
-                result = nrf.send(chunk)
-                GPIO.output(CONNECTION_LED, GPIO.LOW)
-                #time.sleep(0.5)
-
-        # Show percentage of message sent
-        print(f"Percentage of message sent: {round((chunks.index(chunk)+1)/len(chunks)*100, 2)}%")
-    
-    print("Message transmission complete.")
-    ack_payload = b'FINALTRANSMISSIO'  # Mensaje de finalización
-    nrf.listen = False  # Dejar de escuchar para poder enviar
-    sent_successfully = nrf.send(ack_payload)  # Enviar el mensaje de confirmación
-    if sent_successfully:
-        print("Confirmation message sent successfully.")
-        blink_success_leds(10, CONNECTION_LED, NM_LED)
-        reset_leds()
-    else:
-#aqui es el unico sitio donde se podria hacer retransmi sin liarla demasiado
-        print("Failed to send confirmation message.")
-        sent_successfully = nrf.send(ack_payload)
-        while not sent_successfully:
+    #aqui es el unico sitio donde se podria hacer retransmi sin liarla demasiado
+            print("Failed to send confirmation message.")
             sent_successfully = nrf.send(ack_payload)
-            time.sleep(0.5)
-        print("Confirmation message sent successfully.")
-        GPIO.output(CONNECTION_LED, GPIO.LOW)
+            while not sent_successfully:
+                sent_successfully = nrf.send(ack_payload)
+                time.sleep(0.5)
+            print("Confirmation message sent successfully.")
+            GPIO.output(CONNECTION_LED, GPIO.LOW)
 
-
+        r = False
+        start = time.monotonic()
+        while (not r) and ((time.monotonic() - start) < 30):
+            print(f"Master Waiting for File Request, R: {r}")
+            r = wait_for_desired_message(FILE_REQUEST_MSG, 10)
+            if r:
+                print(f"File Request Received, R: {r}")
+                print(f"Sending Request ACC, R: {r}")
+                nrf.listen = False  # put radio into RX mode and power up
+                sent_successfully = nrf.send(REQUEST_ACC_MSG)
+                while not sent_successfully:
+                    sent_successfully = nrf.send(REQUEST_ACC_MSG)
+                    time.sleep(0.5)
+        nrf.listen = False
 
 def slave(timeout=1000):
-    logging.info("Slave function started.")
-    nrf.listen = True  # put radio into RX mode and power up
-    nrf.flush_tx()
-    nrf.flush_rx()  # Vaciar el búfer de recepción
-    nrf.flush_tx()
-    nrf.flush_rx()  # Vaciar el búfer de recepción
-    nrf.flush_tx()
-    nrf.flush_rx()  # Vaciar el búfer de recepción
-    GPIO.output(RECEIVER_LED, GPIO.HIGH)
-    message = []  # list to accumulate message chunks
-    start = time.monotonic()
-    logging.info("Waiting for start message...")
-    print("Waiting for start message...")
-    received_payload = nrf.read()  # Leer el mensaje entrante
-    while received_payload != b'Ready':
-        received_payload = nrf.read()
-        
-    logging.info("Waiting for incoming message...")
-    print("Waiting for incoming message...")
-    while (time.monotonic() - start) < timeout:
-        GPIO.output(CONNECTION_LED, GPIO.LOW)
-        if nrf.available():
-            received_payload = nrf.read()  # Leer el mensaje entrante
-            if received_payload == b'FINALTRANSMISSIO':
-                # Mensaje transmission complete
-                logging.info("Message transmission complete.")
-                print("Message transmission complete.")
-                break
-            else:
-                # print(f'Received payload: {received_payload}')
-                message.append(received_payload)
-                GPIO.output(CONNECTION_LED, GPIO.HIGH)
-
-            start = time.monotonic()  # Restablecer el temporizador
+    output = 1
+    while output:    
+        logging.info("Slave function started.")
+        nrf.listen = True  # put radio into RX mode and power up
+        nrf.flush_tx()
+        nrf.flush_rx()  # Vaciar el búfer de recepción
+        nrf.flush_tx()
+        nrf.flush_rx()  # Vaciar el búfer de recepción
+        nrf.flush_tx()
+        nrf.flush_rx()  # Vaciar el búfer de recepción
+        GPIO.output(RECEIVER_LED, GPIO.HIGH)
+        message = []  # list to accumulate message chunks
+        start = time.monotonic()
+        logging.info("Waiting for start message...")
+        print("Waiting for start message...")
+        received_payload = nrf.read()  # Leer el mensaje entrante
+        while received_payload != b'Ready':
+            received_payload = nrf.read()
             
-    # Concatenar y procesar el mensaje completo recibido, si es necesario
-    complete_message = b''.join(message)
-    print(f"Complete message received: {complete_message}")
-    #logging.info(f"Complete message received: {complete_message}")
+        logging.info("Waiting for incoming message...")
+        print("Waiting for incoming message...")
+        while (time.monotonic() - start) < timeout:
+            GPIO.output(CONNECTION_LED, GPIO.LOW)
+            if nrf.available():
+                received_payload = nrf.read()  # Leer el mensaje entrante
+                if received_payload == b'FINALTRANSMISSIO':
+                    # Mensaje transmission complete
+                    logging.info("Message transmission complete.")
+                    print("Message transmission complete.")
+                    break
+                else:
+                    # print(f'Received payload: {received_payload}')
+                    message.append(received_payload)
+                    GPIO.output(CONNECTION_LED, GPIO.HIGH)
 
-    filename = complete_message.split(b'separaciofitxer')[-1].decode('utf-8')
-    long_desc = len(filename) + len(b'separaciofitxer')
-    complete_message = complete_message[:-long_desc]
-    with open(filename, 'wb') as file:
-        file.write(complete_message)
-    
-    # # # Extract the zip file
-    # # os.system(f"unzip -j {filename} -d .")
-    
-    # Extract the 7z file
-    output = os.system(f"yes | 7z x {filename} -o.")
+                start = time.monotonic()  # Restablecer el temporizador
+                
+        # Concatenar y procesar el mensaje completo recibido, si es necesario
+        complete_message = b''.join(message)
+        print(f"Complete message received: {complete_message}")
+        #logging.info(f"Complete message received: {complete_message}")
 
-    if output == 0:
-        print("File decompressed successfully")
-        logging.info("File decompressed successfully")
-        blink_success_leds(10, CONNECTION_LED, NM_LED)
-    else:
-        print("Error decompressing the file")
-        logging.info("Error decompressing the file")
-        blink_failure_leds(10)
+        filename = complete_message.split(b'separaciofitxer')[-1].decode('utf-8')
+        long_desc = len(filename) + len(b'separaciofitxer')
+        complete_message = complete_message[:-long_desc]
+        with open(filename, 'wb') as file:
+            file.write(complete_message)
+        
+        # # # Extract the zip file
+        # # os.system(f"unzip -j {filename} -d .")
+        
+        # Extract the 7z file
+        output = os.system(f"yes | 7z x {filename} -o.")
+
+        if output == 0:
+            print("File decompressed successfully")
+            logging.info("File decompressed successfully")
+            blink_success_leds(10, CONNECTION_LED, NM_LED)
+        else:
+            print("Error decompressing the file")
+            logging.info("Error decompressing the file")
+            blink_failure_leds(5)
+
+            r = False
+            start = time.monotonic()
+            while (not r) and ((time.monotonic() - start) < 30):
+                nrf.listen = False  # put radio into RX mode and power up
+                sent_successfully = nrf.send(FILE_REQUEST_MSG)
+                while not sent_successfully:
+                    sent_successfully = nrf.send(FILE_REQUEST_MSG)
+                    time.sleep(0.5)
+                print(f"Slave Waiting, R: {r}")
+                r = wait_for_desired_message(REQUEST_ACC_MSG, 2)
+                nrf.listen = True  # put radio into RX mode and power up
 
     # Buscar los archivos .txt en el directorio de trabajo
     txt_files = [f for f in os.listdir('.') if f.endswith('.txt')]
@@ -279,8 +343,6 @@ def slave(timeout=1000):
             #reset_leds()
     except Exception as e:
         print(f"Failed to save the message in '/media/usb'. Error: {e}")
-
-
 
 def set_role(): 
     """Set the role using GPIO switches."""
