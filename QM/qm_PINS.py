@@ -74,8 +74,6 @@ radio_number = bool(
 )
 '''
 
-<<<<<<< HEAD
-=======
 # set TX address of RX node into the TX pipe
 nrf.open_tx_pipe(address[0])  # always uses pipe 0
 
@@ -83,16 +81,26 @@ nrf.open_tx_pipe(address[0])  # always uses pipe 0
 nrf.open_rx_pipe(1, address[1])  # using pipe 1
 
 def USB_led():
+    # Check number of files in the USB drive
+    nfiles_old = os.system("ls /media/usb | wc -l")
     while True:
         df = subprocess.check_output("lsusb")
         df = df.split(b'\n')
         num_devices = len(df)-1
-        if num_devices < 2:
-            GPIO.output(USB_LED, GPIO.LOW)
-            time.sleep(0.5)
-        else:
+        if num_devices >= 2 and os.system("ls /media/usb | wc -l") != 0:
             GPIO.output(USB_LED, GPIO.HIGH)
             time.sleep(0.5)
+        else:
+            GPIO.output(USB_LED, GPIO.LOW)
+            time.sleep(0.5)
+        if nfiles_old > os.system("ls /media/usb | wc -l"):
+            print("New file detected in USB drive")
+            nfiles_old = os.system("ls /media/usb | wc -l")
+            for i in range(50):
+                GPIO.output(USB_LED, GPIO.HIGH)
+                time.sleep(0.1)
+                GPIO.output(USB_LED, GPIO.LOW)
+                time.sleep(0.1)
 
 
 def reset_leds():
