@@ -84,6 +84,7 @@ def USB_led():
         if num_devices >= 1:    # 1 !!
             GPIO.output(USB_LED, GPIO.HIGH)
             time.sleep(0.5)
+            break
         else:
             GPIO.output(USB_LED, GPIO.LOW)
             time.sleep(0.5)
