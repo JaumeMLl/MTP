@@ -81,7 +81,7 @@ def USB_led():
     usb_path = '/media/usb'
     while True:
         num_devices = len(os.listdir('/dev/bus/usb'))  # Checking USB devices
-        if num_devices >= 2:
+        if num_devices >= 1:    # 1 !!
             GPIO.output(USB_LED, GPIO.HIGH)
             time.sleep(0.5)
         else:
