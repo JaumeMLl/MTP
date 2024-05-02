@@ -3,7 +3,6 @@ import struct
 import board
 from digitalio import DigitalInOut
 import os
-import subprocess
 import RPi.GPIO as GPIO
 import numpy as np
 import shutil
@@ -89,7 +88,7 @@ def USB_led():
             GPIO.output(USB_LED, GPIO.LOW)
             time.sleep(0.5)
 
-def newfile_led():
+def newfile_leds():
     GPIO.output(USB_LED, GPIO.HIGH)
     time.sleep(0.1)
     GPIO.output(USB_LED, GPIO.LOW)
@@ -305,7 +304,7 @@ def slave(timeout=1000):
         for txt_file in txt_files:
             shutil.copy(txt_file, '/media/usb/')
             print(f"Received message '{txt_file}' also stored in '/media/usb/'")
-            reset_leds()
+            newfile_leds()
             #blink_success_leds(10, USB_LED, USB_LED) 
             #reset_leds()
     except Exception as e:
