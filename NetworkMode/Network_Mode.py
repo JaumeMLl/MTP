@@ -325,6 +325,7 @@ class StateMachine:
         Manages packet transmission state and transitions accordingly.
         """
         comms_info.channel = CHANNEL2
+        nrf.channel = CHANNEL2
         if not needToBackOff():
             packageTransmittedFlag = packageTransmission()
             print("Packet Sent Correctly:", packageTransmittedFlag)
