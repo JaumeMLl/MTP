@@ -1,4 +1,20 @@
 # MTP - Equipo C
+## LEDS
+- LED BLAU INDICA USB BEN MUNTAT.
+- LED GROC INDICA NETWORK MODE.
+- 1R LED VERMELL INDICA RECEIVER.
+- 2N LED VERMELL INDICA TRANSMITTER.
+## FUNCIONS LEDS
+- DURANT LA TRANSMISIONDEL SIMPLE MODE, ESPEREM LED VERD CENTRAL ACTIU (QUALSEVOL ALTRA COSA SERÀ CONSIDERADA ERROR).
+- AL FINAL DE LA TRANSMISSIÓ EN EL TRANSMITTER: LED VERD Y GROC PARPADEJANT INDICA MISSATGE TRANSMES.
+- AL FINAL DE LA TRANISMISSIÓ EN EL RECEPTOR: LED VERD Y GROC PARPADEJANT INDICA MISSATGE DESCOMPRIMIT CORRECTAMENT. POSERIORMENT, LED BLAU PARPADEJANT INDICA COPIA CORRECTA AL USB.
+- AL FINAL DE LA TRANISMISSIÓ EN EL RECEPTOR: LEDS VERMELLS PARPADEJANT INDICA ERROR EN LA DESCOMPRESIÓ.
+
+## Switch
+![image](https://github.com/JaumeMLl/MTP/assets/72398466/7b1dae60-33d9-4ad9-a16c-c2d5f9ae2a64)
+- Sw1 = RX/TX: UP is RX, DOWN is TX
+- SW2 = NW: UP is NW off, DOWN is NW on
+- SW3 = ---
 
 ## Pins
 
@@ -13,6 +29,58 @@ Important: The CE in the raspberry corresponds to the chip select (In the transi
 ![image](https://github.com/JaumeMLl/MTP/assets/79020335/69e355a9-380a-4f6b-b806-965cf8a60c7a)
 
 Important: The CE in the transciver corresponds to chip enable
+
+### Fer que s'executi el .py directament al obrir la raspy
+
+1. Crear un file systemd --> **my_script** es pot canviar 
+
+`sudo nano /etc/systemd/system/Single_Mode.service`
+
+2. Afegir el següent contingut --> S'ha d'editar la ubicació corresponent de l'script
+
+```
+[Unit]
+Description=My Python Script
+After=multi-user.target
+
+[Service]
+User=pi
+ExecStart=/usr/bin/python3 /home/pi/SM/Single_Mode.py 
+
+[Install]
+WantedBy=multi-user.target
+```
+3. Guardar i sortir
+
+4.
+  `sudo systemctl daemon-reload`
+
+5. Permetre aquest servei
+
+`sudo systemctl enable Single_Mode.service`
+
+5. Començar el servei
+
+`sudo systemctl start Single_Mode.service`
+
+!! Si no funciona fer un reboot !! (`sudo reboot`)
+
+### Per desautomatitzar-ho: 
+
+1. Obrim un terminal a la raspy
+
+2. Desactivem el servei 
+
+`sudo systemctl disable Single_Mode.service`
+
+3. Parar el servei 
+
+`sudo systemctl stop Single_Mode.service`
+
+4. Reboot
+
+`sudo reboot`
+
 
 ### Conexions
 
