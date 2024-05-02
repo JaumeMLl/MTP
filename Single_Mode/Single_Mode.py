@@ -8,9 +8,14 @@ import RPi.GPIO as GPIO
 import threading
 import numpy as np
 import shutil
+import logging
+
 
 
 from circuitpython_nrf24l01.rf24 import RF24
+
+logging.basicConfig(filename='slave.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+
 
 # invalid default values for scoping
 SPI_BUS, CSN_PIN, CE_PIN = (None, None, None)
@@ -198,6 +203,7 @@ def master(filelist):
 
 
 def slave(timeout=1000):
+    logging.info("Slave function started.")
     nrf.listen = True  # put radio into RX mode and power up
     nrf.flush_tx()
     nrf.flush_rx()  # Vaciar el búfer de recepción
@@ -208,13 +214,13 @@ def slave(timeout=1000):
     GPIO.output(RECEIVER_LED, GPIO.HIGH)
     message = []  # list to accumulate message chunks
     start = time.monotonic()
-
+    logging.info("Waiting for start message...")
     print("Waiting for start message...")
     received_payload = nrf.read()  # Leer el mensaje entrante
     while received_payload != b'Ready':
         received_payload = nrf.read()
         
-
+    logging.info("Waiting for incoming message...")
     print("Waiting for incoming message...")
     while (time.monotonic() - start) < timeout:
         GPIO.output(CONNECTION_LED, GPIO.LOW)
@@ -222,6 +228,7 @@ def slave(timeout=1000):
             received_payload = nrf.read()  # Leer el mensaje entrante
             if received_payload == b'FINALTRANSMISSIO':
                 # Mensaje transmission complete
+                logging.info("Message transmission complete.")
                 print("Message transmission complete.")
                 break
             else:
@@ -234,6 +241,7 @@ def slave(timeout=1000):
     # Concatenar y procesar el mensaje completo recibido, si es necesario
     complete_message = b''.join(message)
     print(f"Complete message received: {complete_message}")
+    logging.info(f"Complete message received: {complete_message}")
 
     filename = complete_message.split(b'separaciofitxer')[-1].decode('utf-8')
     long_desc = len(filename) + len(b'separaciofitxer')
@@ -249,16 +257,18 @@ def slave(timeout=1000):
 
     if output == 0:
         print("File decompressed successfully")
+        logging.info("File decompressed successfully")
         blink_success_leds(10, CONNECTION_LED, NM_LED)
     else:
         print("Error decompressing the file")
+        logging.info("Error decompressing the file")
         blink_failure_leds(10)
 
     # Buscar los archivos .txt en el directorio de trabajo
     txt_files = [f for f in os.listdir('.') if f.endswith('.txt')]
 
     print("Received message stored in",txt_files)
-    
+    logging.info("Received message stored in",txt_files)
 
     # Copy the extracted .txt file to the USB directory
     try:
