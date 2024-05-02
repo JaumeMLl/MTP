@@ -185,7 +185,10 @@ def packageTransmission():
     if len(filelist) == 0:
         print(f"No files in: {path}")
         return True
+    
+    nrf.autoack = True
     transmitter(comms_info, filelist, TRANSMIT_ATTEMPTS, nrf)
+    nrf.autoack = False
 
 def sendFileRequest():
     """
@@ -244,7 +247,9 @@ def packageReception():
     Returns:
     - True if the package is received successfully, False otherwise.
     """
+    nrf.autoack = True
     receiver(comms_info, TIMEOUT, nrf)
+    nrf.autoack = False
 
 # State Machine
 class StateMachine:

@@ -79,41 +79,30 @@ def transmitter(comms_info, filelist, count, nrf):
     #     file = open(filepath,'rb')
     #     message += file.read()
     
-    filepath = filelist[-1]
+    filepath = filelist[0]
     # This line stores the filename in the message
     message = open(filepath, 'rb').read() + b'separaciofitxer' + bytes(filepath.split('/')[-1], 'utf-8')
 
     chunks = [message[i:i + 32] for i in range(0, len(message), 32)]
-
+    
     for chunk in chunks:
-        attempt = 0
-        while attempt < count:
-            print(f"Sending chunk: {chunk}")
-            nrf.send(chunk)  # Enviar el chunk
-            nrf.listen = True  # Cambiar al modo RX para esperar el ACK
-
-            start_time = time.monotonic()  # Iniciar el temporizador
-            while time.monotonic() - start_time < 5:  # Esperar hasta 5 segundos para recibir el ACK
-                if nrf.available():  # Verificar si hay un mensaje disponible
-                    received_payload = nrf.read()  # Leer el payload recibido
-                    if received_payload == b'ACK':  # Si se recibe el ACK esperado
-                        print("ACK received. Sending next chunk.")
-                        attempt = count  # Salir del bucle de reintento
-                        break  # Salir del bucle de espera
-                time.sleep(0.1)  # Pequeña pausa para evitar sobrecargar la CPU
-
-            nrf.listen = False  # Cambiar de nuevo al modo TX después de esperar el ACK
-
-            if attempt < count - 1:  # Si no se recibió el ACK, reintento
+        result = nrf.send(chunk)  # Enviar el chunk
+        # received_payload = nrf.read()  # Leer el payload recibido
+        if result:  # Si se recibe el ACK esperado
+            print("ACK received. Sending next chunk.")
+        else:
+            while not result:
                 print("No ACK received. Retrying...")
-            attempt += 1
+                result = nrf.send(chunk)
 
-        if attempt == count:  # Si se agotaron los intentos sin recibir ACK
-            print("Failed to receive ACK after maximum attempts. Moving to the next chunk.")
-            # Opcional: podrías elegir terminar el envío completamente aquí si es crítico
-            # break
+        # Show percentage of message sent
+        print(f"Percentage of message sent: {round((chunks.index(chunk)+1)/len(chunks)*100, 2)}%")
+    
+    print("Message transmission complete.")
+    ack_payload = b'FINALTRANSMISSIO'  # Mensaje de finalización
+    nrf.listen = False  # Dejar de escuchar para poder enviar
+    nrf.send(ack_payload)  # Enviar el mensaje de confirmación
 
-    nrf.ack = False
     print("Message transmission complete.")
 
 def receiver(comms_info, timeout, nrf):
@@ -161,7 +150,6 @@ def receiver(comms_info, timeout, nrf):
     with open(filename, 'wb') as file:
         file.write(complete_message)
 
-    nrf.ack = False
     print("Received message stored in",filename)
 
     # Guardar también el mensaje completo en un archivo en /mnt/usbdrive
