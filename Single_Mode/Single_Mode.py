@@ -46,6 +46,7 @@ NM_LED = 16
 USB_LED = 21
 NM_SWITCH = 3
 TXRX_SWITCH = 2
+START_SWITCH = 4 # ????????????????????
 GPIO.setup(TRANSMITTER_LED, GPIO.OUT)
 GPIO.setup(RECEIVER_LED, GPIO.OUT)
 GPIO.setup(CONNECTION_LED, GPIO.OUT)
@@ -85,31 +86,6 @@ nrf.open_tx_pipe(address[0])  # always uses pipe 0
 # set RX address of TX node into an RX pipe
 nrf.open_rx_pipe(1, address[1])  # using pipe 1
 
-def USB_led():
-    # Check number of files in the USB drive
-    filelist = np.array([os.path.join("/media/usb", f) for f in os.listdir("/media/usb") if os.path.isfile(os.path.join("/media/usb", f))])
-    filelist = filelist[np.where([x.endswith(".txt") and not x.startswith(".") for x in filelist])[0]]
-    nfiles_old = len(filelist) # Get the list of files in the directory)
-    while True:
-        df = subprocess.check_output("lsusb")
-        df = df.split(b'\n')
-        num_devices = len(df)-1
-        if num_devices >= 2:
-            GPIO.output(USB_LED, GPIO.HIGH)
-            time.sleep(0.1)
-        else:
-            GPIO.output(USB_LED, GPIO.LOW)
-            time.sleep(0.1)
-        filelist = np.array([os.path.join("/media/usb", f) for f in os.listdir("/media/usb") if os.path.isfile(os.path.join("/media/usb", f))])
-        filelist = filelist[np.where([x.endswith(".txt") and not x.startswith(".") for x in filelist])[0]]
-        if nfiles_old < len(filelist):
-            print("New file detected in USB drive")
-            nfiles_old = len(filelist)
-            for i in range(50):
-                GPIO.output(USB_LED, GPIO.HIGH)
-                time.sleep(0.1)
-                GPIO.output(USB_LED, GPIO.LOW)
-                time.sleep(0.1)
         
 def reset_leds():
     """Turn off all LEDs."""
@@ -136,6 +112,13 @@ def blink_failure_leds(N):
         GPIO.output(TRANSMITTER_LED, GPIO.LOW)
         GPIO.output(RECEIVER_LED, GPIO.LOW)
         time.sleep(0.5)
+        
+def blink_usb_LED():
+    for i in range(50):
+        GPIO.output(USB_LED, GPIO.HIGH)
+        time.sleep(0.05)
+        GPIO.output(USB_LED, GPIO.LOW)
+        time.sleep(0.05)
 
 # def wait_for_desired_message(desired_message, timeout):
 #     """
@@ -170,46 +153,26 @@ def blink_failure_leds(N):
 #     return False
 
 def master(filelist):
-    nrf.listen = True
-    nrf.listen = False  # ensure the nRF24L01 is in TX mode
-    GPIO.output(TRANSMITTER_LED, GPIO.HIGH)
-    '''
-    nrf.flush_tx()
-    nrf.flush_rx()  # Vaciar el búfer de recepción
-    fifo_state_tx = nrf.fifo(True)
-    fifo_state_rx = nrf.fifo(False)
-    while fifo_state_tx != 2 and fifo_state_rx != 2:
-        nrf.flush_tx()
-        nrf.flush_rx()  # Vaciar el búfer de recepción
-        print('fifo state TX:',fifo_state_tx)
-        print('fifo state RX:',fifo_state_rx)
-        fifo_state_rx = nrf.fifo(False)
-        fifo_state_tx = nrf.fifo(True)
-    '''
-
-    # fifo_state_tx = nrf.fifo(True)
-    # print('fifo state TX:',fifo_state_tx)
-    
-    # print(f"Sending file: {filepath}")
-    
-    # # Compress the file using zip
-    # os.system(f"zip -j {filepath}.zip {filepath}")
-    # filepath = filepath + ".zip"
-    
-    filepath = filelist[0] # Parse the first file in the directory
-    # Compress the file using 7z
-    os.system(f"yes | 7z a {filepath}.7z {filepath}")
-    filepath = filepath + ".7z"
-    
-    # This line stores the filename in the message
-    message = open(filepath, 'rb').read() + b'separaciofitxer' + bytes(filepath.split('/')[-1], 'utf-8')
-
+ 
     decompressed_successfully = False
     while not decompressed_successfully:
+        GPIO.output(TRANSMITTER_LED, GPIO.HIGH)
+        nrf.listen = True
         nrf.listen = False
-        for i in range(10): # Emtpy the FIFOs
+        
+        # Emtpy the FIFOs
+        for i in range(10): 
             nrf.send(b'hola')
             nrf.read()
+        
+        
+        filepath = filelist[0] # Parse the first file in the directory
+        # Compress the file using 7z
+        os.system(f"yes | 7z a {filepath}.7z {filepath}")
+        filepath = filepath + ".7z"
+        
+        # This line stores the filename in the message
+        message = open(filepath, 'rb').read() + b'separaciofitxer' + bytes(filepath.split('/')[-1], 'utf-8')
         
         chunks = [message[i:i + 32] for i in range(0, len(message), 32)]
         
@@ -241,21 +204,16 @@ def master(filelist):
         ack_payload = b'FINALTRANSMISSIO'  # Mensaje de finalización
         nrf.listen = False  # Dejar de escuchar para poder enviar
         sent_successfully = nrf.send(ack_payload)  # Enviar el mensaje de confirmación
-        if sent_successfully:
-            print("Confirmation message sent successfully.")
-        else:
-    #aqui es el unico sitio donde se podria hacer retransmi sin liarla demasiado
-            print("Failed to send confirmation message.")
+        while not sent_successfully:
             sent_successfully = nrf.send(ack_payload)
-            while not sent_successfully:
-                sent_successfully = nrf.send(ack_payload)
-                time.sleep(0.5)
-            print("Confirmation message sent successfully.")
-            GPIO.output(CONNECTION_LED, GPIO.LOW)
+            time.sleep(0.5)
+        print("Last message sent successfully.")
+        GPIO.output(CONNECTION_LED, GPIO.LOW)
             
         # Listen for a new file request (COMPRESSION_CONFIRMED)
         veredict = False
         while not veredict:
+            print("Waiting for receiver's veredict...")
             nrf.listen = True
             if nrf.available():
                 received_payload = nrf.read()  # Leer el mensaje entrante
@@ -291,7 +249,8 @@ def slave(timeout=1000):
             
         logging.info("Waiting for incoming message...")
         print("Waiting for incoming message...")
-        while (time.monotonic() - start) < timeout:
+        message_completed = False
+        while not message_completed:
             GPIO.output(CONNECTION_LED, GPIO.LOW)
             if nrf.available():
                 received_payload = nrf.read()  # Leer el mensaje entrante
@@ -299,7 +258,7 @@ def slave(timeout=1000):
                     # Mensaje transmission complete
                     logging.info("Message transmission complete.")
                     print("Message transmission complete.")
-                    break
+                    message_completed = True
                 else:
                     # print(f'Received payload: {received_payload}')
                     message.append(received_payload)
@@ -318,9 +277,6 @@ def slave(timeout=1000):
         with open(filename, 'wb') as file:
             file.write(complete_message)
         
-        # # # Extract the zip file
-        # # os.system(f"unzip -j {filename} -d .")
-        
         # Extract the 7z file
         output = os.system(f"yes | 7z x {filename} -o.")
 
@@ -331,6 +287,7 @@ def slave(timeout=1000):
             nrf.listen = False  # put radio in TX mode and power up
             sent_successfully = nrf.send(COMPRESSION_CONFIRMED)
             while not sent_successfully:
+                print("Error sending the confirmation message, retrying...")
                 sent_successfully = nrf.send(COMPRESSION_CONFIRMED)
                 time.sleep(0.1)
                 
@@ -344,8 +301,9 @@ def slave(timeout=1000):
             nrf.listen = False  # put radio in TX mode and power up
             sent_successfully = nrf.send(COMPRESSION_ERROR)
             while not sent_successfully:
+                print("Error sending the confirmation message, retrying...")
                 sent_successfully = nrf.send(COMPRESSION_ERROR)
-                time.sleep(0.5)
+                time.sleep(0.1)
             print(f"Soliciting file again. Sent: {sent_successfully}")
             
 
@@ -355,6 +313,8 @@ def slave(timeout=1000):
         print(f"Copying the message '{filename_txt}' to '/media/usb/'")
         shutil.copy2(filename_txt, "/media/usb/")
         print("Done!")
+        blink_usb_LED()
+        GPIO.output(USB_LED, GPIO.HIGH)
 
     except Exception as e:
         print(f"Failed to save the message in '/media/usb'. Error: {e}")
@@ -393,6 +353,8 @@ def set_role():
             print(f"No files in: {path}")
             return True        
         master(filelist)
+        reset_leds()
+        GPIO.output(USB_LED, GPIO.LOW)
         return True
     else:  # If neither GPIO pin 2 nor GPIO pin 3 is on
         GPIO.output(NM_LED, GPIO.LOW)
@@ -404,22 +366,28 @@ def set_role():
         # set RX address of TX node into an RX pipe
         nrf.open_rx_pipe(1, address[0])  # using pipe 0
         slave()
+        reset_leds()
+        GPIO.output(USB_LED, GPIO.LOW)
         return True
 
 
 if __name__ == "__main__":
     reset_leds()
+    # print("Waiting for start switch...") # TODO: S'ha de soldar el switch!!!
+    # start = False
+    # while not start:
+    #     if GPIO.input(START_SWITCH):
+    #         start = True
+    #     time.sleep(0.1)
     print("Waiting for USB drive...")
-    # Start the USB LED thread
-    t = threading.Thread(target=USB_led)
-    t.start()
     num_devices = 0
     while num_devices < 2:
         df = subprocess.check_output("lsusb")
         df = df.split(b'\n')
         num_devices = len(df)-1
-        time.sleep(1)
+        time.sleep(0.1)
     print("USB unit connected")
+    GPIO.output(USB_LED, GPIO.HIGH)
  
     try:
         set_role()
