@@ -131,7 +131,6 @@ def transmitter(comms_info, filelist, count, nrf):
     sent_successfully = nrf.send(ack_payload)  # Enviar el mensaje de confirmación
     if sent_successfully:
         print("Confirmation message sent successfully.")
-        reset_leds()
     else:
         print("Failed to send confirmation message.")
         sent_successfully = nrf.send(ack_payload)
@@ -157,6 +156,7 @@ def receiver(comms_info, timeout, nrf):
     start = time.monotonic()
     print("Waiting for start message...")
     received_payload = nrf.read()  # Leer el mensaje entrante
+    #TODO modificar este while, se queda pillado
     while received_payload != b'Ready':
         received_payload = nrf.read()
         
