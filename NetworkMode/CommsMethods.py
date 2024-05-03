@@ -71,7 +71,6 @@ def transmitter(comms_info, filelist, count, nrf):
 
     nrf.autoack = True
     nrf.listen = False  # ensure the nRF24L01 is in TX mode
-    GPIO.output(TRANSMITTER_LED, GPIO.HIGH)
     '''
     nrf.flush_tx()
     nrf.flush_rx()  # Vaciar el búfer de recepción
@@ -115,12 +114,10 @@ def transmitter(comms_info, filelist, count, nrf):
         # received_payload = nrf.read()  # Leer el payload recibido
         if result:  # Si se recibe el ACK esperado
             print("ACK received. Sending next chunk.")
-            GPIO.output(CONNECTION_LED, GPIO.HIGH)
         else:
             while not result:
                 print("No ACK received. Retrying...")
                 result = nrf.send(chunk)
-                GPIO.output(CONNECTION_LED, GPIO.LOW)
                 #time.sleep(0.5)
 
         # Show percentage of message sent
@@ -132,7 +129,6 @@ def transmitter(comms_info, filelist, count, nrf):
     sent_successfully = nrf.send(ack_payload)  # Enviar el mensaje de confirmación
     if sent_successfully:
         print("Confirmation message sent successfully.")
-        blink_success_leds(10, CONNECTION_LED, NM_LED)
         reset_leds()
     else:
         print("Failed to send confirmation message.")
@@ -141,7 +137,6 @@ def transmitter(comms_info, filelist, count, nrf):
             sent_successfully = nrf.send(ack_payload)
             time.sleep(0.5)
         print("Confirmation message sent successfully.")
-        GPIO.output(CONNECTION_LED, GPIO.LOW)
 
     nrf.autoack = False
 
@@ -156,7 +151,6 @@ def receiver(comms_info, timeout, nrf):
     nrf.flush_rx()  # Vaciar el búfer de recepción
     nrf.flush_tx()
     nrf.flush_rx()  # Vaciar el búfer de recepción
-    GPIO.output(RECEIVER_LED, GPIO.HIGH)
     message = []  # list to accumulate message chunks
     start = time.monotonic()
     print("Waiting for start message...")
@@ -166,7 +160,6 @@ def receiver(comms_info, timeout, nrf):
         
     print("Waiting for incoming message...")
     while (time.monotonic() - start) < timeout:
-        GPIO.output(CONNECTION_LED, GPIO.LOW)
         if nrf.available():
             received_payload = nrf.read()  # Leer el mensaje entrante
             if received_payload == b'FINALTRANSMISSIO':
@@ -176,7 +169,6 @@ def receiver(comms_info, timeout, nrf):
             else:
                 # print(f'Received payload: {received_payload}')
                 message.append(received_payload)
-                GPIO.output(CONNECTION_LED, GPIO.HIGH)
 
             start = time.monotonic()  # Restablecer el temporizador
             
@@ -199,10 +191,8 @@ def receiver(comms_info, timeout, nrf):
 
     if output == 0:
         print("File decompressed successfully")
-        blink_success_leds(10, CONNECTION_LED, NM_LED)
     else:
         print("Error decompressing the file")
-        blink_failure_leds(5)
 
     # Buscar los archivos .txt en el directorio de trabajo
     txt_files = [f for f in os.listdir('.') if f.endswith('.txt')]
