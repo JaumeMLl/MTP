@@ -337,6 +337,10 @@ class StateMachine:
         
         comms_info.channel = CHANNEL1
         nrf.channel = CHANNEL1
+        # TODO pensar en esto
+        comms_info.listening_pipe_address = BROADCAST_ID
+        comms_info.destination_pipe_address = BROADCAST_ID
+        set_pipes(comms_info, nrf)
         self.state = "Packet Possession State"
 
     def send_request_state(self):
