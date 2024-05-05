@@ -373,6 +373,7 @@ def set_role():
 
 if __name__ == "__main__":
     reset_leds()
+    GPIO.output(USB_LED, GPIO.LOW)
     # print("Waiting for start switch...") # TODO: S'ha de soldar el switch!!!
     # start = False
     # while not start:
