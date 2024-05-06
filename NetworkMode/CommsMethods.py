@@ -66,6 +66,7 @@ def transmitter(comms_info, filelist, count, nrf):
     #TODO implement transmitter
     r = False
     file_content = filelist
+    nrf.auto_ack = True
     nrf.listen = False  
     chunk_size = 31 
     total_chunks = len(file_content) // (chunk_size) + (1 if len(file_content) % (chunk_size) else 0)
@@ -86,12 +87,13 @@ def transmitter(comms_info, filelist, count, nrf):
         print("Package Transmission Failed")
     return r 
 
+global tx_bit_flip
 tx_bit_flip = 0
 
 def send_chunk_sw(buffer, nrf):
-    global tx_bit_flip
     first_byte = tx_bit_flip
     buffer = bytes([first_byte]) + buffer
+    nrf.auto_ack = True
     result = nrf.send(buffer)
     while not result:
         print("ERROR")
@@ -99,12 +101,15 @@ def send_chunk_sw(buffer, nrf):
     tx_bit_flip ^= 1
     return result
 
+rx_bit_flip = 0
 
 def receiver(comms_info, timeout, nrf):
-    rx_bit_flip = 0
+    global rx_bit_flip
     print("starting reception")
+    #nrf.channel = CHANNEL2
     nrf.auto_ack=True
     nrf.listen = True
+    stop_wait = False
     received_data = bytearray()
     start = time.monotonic()
     while (time.monotonic() - start) < timeout:
@@ -112,7 +117,8 @@ def receiver(comms_info, timeout, nrf):
             while nrf.available():
                 buffer = nrf.read(nrf.any())
                 received_bit_flip = buffer[0]
-                if received_bit_flip == rx_bit_flip:
+                print("BIT RECEIVED:", received_bit_flip, "EXPECTED BIT: ", rx_bit_flip)
+                if received_bit_flip == rx_bit_flip or not stop_wait:
                     print("Received chunk: {}...".format(buffer[:10]))
                     received_data += buffer[1:]  
                     rx_bit_flip ^= 1

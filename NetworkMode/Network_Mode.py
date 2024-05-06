@@ -24,7 +24,7 @@ try:  # on Linux
 
     SPI_BUS = spidev.SpiDev()  # for a faster interface on linux
     CSN_PIN = 0  # use CE0 on default bus (even faster than using any pin)
-    CE_PIN = DigitalInOut(board.D23)  # using pin gpio23 (BCM numbering)
+    CE_PIN = DigitalInOut(board.D22)  # using pin gpio23 (BCM numbering)
 
 except ImportError:  # on CircuitPython only
     # using board.SPI() automatically selects the MCU's
@@ -54,6 +54,15 @@ nrf.open_tx_pipe(BROADCAST_ID)
 
 # set RX address of TX node into an RX pipe
 nrf.open_rx_pipe(1, BROADCAST_ID)
+
+nrf.pa_level = -18 # Power level of: 0, -6, -12, -18 dBm
+nrf.data_rate = 2 #Bit rate of: 2 (Mbps), 1 (Mbps), 250 (kbps); Insert value
+nrf.arc = 15 #Number of retransmits, default is 3. Int. Value: [0, 15]
+nrf.ard = 500 #Retransmission time from [250, 4000] in microseconds
+#nrf.payload_length = 32
+nrf.crc = 2 #Default 2. Number of bytes for the CRC. Int. Value: [0, 2]
+nrf.flush_rx()
+nrf.flush_tx()
 
 #---- CLASSES ----#
 class CommsInfo:
@@ -87,7 +96,7 @@ def checkFileExists():
     Returns:
     - True if the file exists, False otherwise.
     """
-    path = '/media/usb'  # Ruta completa al archivo en el directorio donde se monta el USB
+    path = '/home/pi/USB'  # Ruta completa al archivo en el directorio donde se monta el USB
     filelist = np.array([os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]) # Get the list of files in the directory
     filelist = filelist[np.where([x.endswith(".txt") and not x.startswith(".") for x in filelist])[0]] # Get the elements that end with ".txt" and does not start with "."
     if not os.path.exists(path):
@@ -187,8 +196,9 @@ def packageTransmission():
         return True
     
     nrf.autoack = True
-    transmitter(comms_info, filelist, TRANSMIT_ATTEMPTS, nrf)
+    data = transmitter(comms_info, filelist, TRANSMIT_ATTEMPTS, nrf)
     nrf.autoack = False
+    return data
 
 def sendFileRequest():
     """
@@ -247,9 +257,10 @@ def packageReception():
     Returns:
     - True if the package is received successfully, False otherwise.
     """
-    nrf.autoack = True
+    nrf.auto_ack = True
+    #nrf.channel = CHANNEL2
     receiver(comms_info, TIMEOUT, nrf)
-    nrf.autoack = False
+    nrf.auto_ack = False
 
 # State Machine
 class StateMachine:
@@ -316,8 +327,8 @@ class StateMachine:
         else:
             if anyTransmitAcc():
                 # Las pipes ya estan bien definidas
-                comms_info.channel = CHANNEL2
-                nrf.channel = CHANNEL2
+                #comms_info.channel = CHANNEL2
+                #nrf.channel = CHANNEL2
                 self.state = "Packet Transmission State"
             else:
                 comms_info.listening_pipe_address = BROADCAST_ID
@@ -329,8 +340,8 @@ class StateMachine:
         """
         Manages packet transmission state and transitions accordingly.
         """
-        comms_info.channel = CHANNEL2
-        nrf.channel = CHANNEL2
+        #comms_info.channel = CHANNEL2
+        #nrf.channel = CHANNEL2
         if not needToBackOff():
             packageTransmittedFlag = packageTransmission()
             print("Packet Sent Correctly:", packageTransmittedFlag)
@@ -374,9 +385,11 @@ class StateMachine:
         """
         Manages packet reception state and transitions accordingly.
         """
-        comms_info.channel = CHANNEL2
+        #comms_info.channel = CHANNEL2
+        #nrf.channel = CHANNEL2
         packageReceivedFlag = packageReception()
         comms_info.channel = CHANNEL1
+        nrf.channel = CANNEL1
         if packageReceivedFlag:
             ledOn()
             comms_info.listening_pipe_address = BROADCAST_ID
