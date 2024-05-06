@@ -24,7 +24,7 @@ try:  # on Linux
 
     SPI_BUS = spidev.SpiDev()  # for a faster interface on linux
     CSN_PIN = 0  # use CE0 on default bus (even faster than using any pin)
-    CE_PIN = DigitalInOut(board.D22)  # using pin gpio23 (BCM numbering)
+    CE_PIN = DigitalInOut(board.D23)  # using pin gpio23 (BCM numbering)
 
 except ImportError:  # on CircuitPython only
     # using board.SPI() automatically selects the MCU's
@@ -258,7 +258,7 @@ def packageReception():
     - True if the package is received successfully, False otherwise.
     """
     nrf.auto_ack = True
-    #nrf.channel = CHANNEL2
+    nrf.channel = CHANNEL2
     receiver(comms_info, TIMEOUT, nrf)
     nrf.auto_ack = False
 
@@ -327,8 +327,8 @@ class StateMachine:
         else:
             if anyTransmitAcc():
                 # Las pipes ya estan bien definidas
-                #comms_info.channel = CHANNEL2
-                #nrf.channel = CHANNEL2
+                comms_info.channel = CHANNEL2
+                nrf.channel = CHANNEL2
                 self.state = "Packet Transmission State"
             else:
                 comms_info.listening_pipe_address = BROADCAST_ID
@@ -340,8 +340,8 @@ class StateMachine:
         """
         Manages packet transmission state and transitions accordingly.
         """
-        #comms_info.channel = CHANNEL2
-        #nrf.channel = CHANNEL2
+        comms_info.channel = CHANNEL2
+        nrf.channel = CHANNEL2
         if not needToBackOff():
             packageTransmittedFlag = packageTransmission()
             print("Packet Sent Correctly:", packageTransmittedFlag)
@@ -385,8 +385,8 @@ class StateMachine:
         """
         Manages packet reception state and transitions accordingly.
         """
-        #comms_info.channel = CHANNEL2
-        #nrf.channel = CHANNEL2
+        comms_info.channel = CHANNEL2
+        nrf.channel = CHANNEL2
         packageReceivedFlag = packageReception()
         comms_info.channel = CHANNEL1
         nrf.channel = CANNEL1

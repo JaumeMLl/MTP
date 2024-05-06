@@ -106,7 +106,7 @@ rx_bit_flip = 0
 def receiver(comms_info, timeout, nrf):
     global rx_bit_flip
     print("starting reception")
-    #nrf.channel = CHANNEL2
+    nrf.channel = CHANNEL2
     nrf.auto_ack=True
     nrf.listen = True
     stop_wait = False
