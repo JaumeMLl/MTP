@@ -53,6 +53,7 @@ def send_message(destination_pipe_address, message, nrf):
     data_to_send = MY_PIPE_ID+b": "+ message
     print(f"About to send: {data_to_send}")
     sent_successfully = nrf.send(data_to_send)  # Enviar el mensaje de confirmación
+    print("aadf")
    
     if sent_successfully:
         print(f"{message} sent successfully.")
@@ -63,10 +64,66 @@ def send_message(destination_pipe_address, message, nrf):
 
 def transmitter(comms_info, filelist, count, nrf):
     #TODO implement transmitter
-    time.sleep(5)
-    print("TODO implement")  
+    r = False
+    file_content = filelist
+    nrf.listen = False  
+    chunk_size = 31 
+    total_chunks = len(file_content) // (chunk_size) + (1 if len(file_content) % (chunk_size) else 0)
+    for i in range(total_chunks):
+        start = i * (chunk_size)
+        end = start + (chunk_size)
+        chunk = file_content[start:end]
+        if len(chunk) < chunk_size:
+            chunk += b'\x00' * (chunk_size - len(chunk))
+        result = send_chunk_sw(chunk, nrf)
+        print(result)
+        print((i+1)/total_chunks, " %")
+        r = True
+
+    if r:
+        print("Package Transmission Accomplished")
+    else:
+        print("Package Transmission Failed")
+    return r 
+
+tx_bit_flip = 0
+
+def send_chunk_sw(buffer, nrf):
+    global tx_bit_flip
+    first_byte = tx_bit_flip
+    buffer = bytes([first_byte]) + buffer
+    result = nrf.send(buffer)
+    while not result:
+        print("ERROR")
+        result = nrf.send(buffer)
+    tx_bit_flip ^= 1
+    return result
+
 
 def receiver(comms_info, timeout, nrf):
-    #TODO implement receiver
-    time.sleep(5)
-    print("TODO implement")
+    rx_bit_flip = 0
+    print("starting reception")
+    nrf.auto_ack=True
+    nrf.listen = True
+    received_data = bytearray()
+    start = time.monotonic()
+    while (time.monotonic() - start) < timeout:
+        if nrf.available():
+            while nrf.available():
+                buffer = nrf.read(nrf.any())
+                received_bit_flip = buffer[0]
+                if received_bit_flip == rx_bit_flip:
+                    print("Received chunk: {}...".format(buffer[:10]))
+                    received_data += buffer[1:]  
+                    rx_bit_flip ^= 1
+                else :
+                    print("Out of sequence packet")
+            start = time.monotonic()
+    nrf.listen = False
+    valid_data_end = len(received_data.rstrip(b'\x00'))
+    valid_data = received_data[:valid_data_end]
+    with open("received_file.txt", "wb") as file:
+        file.write(valid_data)
+        print(f"Archivo reconstruido y guardado. Tamaño total: {len(received_data)} bytes.")
+    nrf.auto_ack=False
+    return True
