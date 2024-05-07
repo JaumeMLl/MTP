@@ -18,7 +18,7 @@ try:  # on Linux
 
     SPI_BUS = spidev.SpiDev()  # for a faster interface on linux
     CSN_PIN = 0  # use CE0 on default bus (even faster than using any pin)
-    CE_PIN = DigitalInOut(board.D25)  # using pin gpio22 (BCM numbering)
+    CE_PIN = DigitalInOut(board.D23)  # using pin gpio22 (BCM numbering)
 
 except ImportError:  # on CircuitPython only
     # using board.SPI() automatically selects the MCU's
@@ -38,9 +38,10 @@ nrf = RF24(SPI_BUS, CSN_PIN, CE_PIN)
 #                21 = bus 2, CE1  # enable SPI bus 1 prior to running this
 
 # Change the Power Amplifier level
-nrf.pa_level = -12
+nrf.pa_level = 0
 ## to enable the custom ACK payload feature
-nrf.ack = True  # False disables again
+nrf.ack = False  # False disables again
+nrf.auto_ack = True
 
 # addresses needs to be in a buffer protocol object (bytearray)
 address = [b"1Node", b"2Node"]
@@ -71,7 +72,7 @@ def master(filelist, count=5):
     #     file = open(filepath,'rb')
     #     message += file.read()
     
-    filepath = filelist[-1]
+    filepath = filelist[0]
     # This line stores the filename in the message
     message = open(filepath, 'rb').read() + b'separaciofitxer' + bytes(filepath.split('/')[-1], 'utf-8')
 =======
@@ -82,38 +83,34 @@ def master(filepath, count=5):
         message = file.read().encode()
 >>>>>>> 0ee453c5ed5b5a67ecded36ce51ef372dba4969e
 
-    chunks = [message[i:i + 32] for i in range(0, len(message), 32)]
-
-    for chunk in chunks:
-        attempt = 0
-        while attempt < count:
-            print(f"Sending chunk: {chunk}")
-            nrf.send(chunk)  # Enviar el chunk
-            nrf.listen = True  # Cambiar al modo RX para esperar el ACK
-
-            start_time = time.monotonic()  # Iniciar el temporizador
-            while time.monotonic() - start_time < 5:  # Esperar hasta 5 segundos para recibir el ACK
-                if nrf.available():  # Verificar si hay un mensaje disponible
-                    received_payload = nrf.read()  # Leer el payload recibido
-                    if received_payload == b'ACK':  # Si se recibe el ACK esperado
-                        print("ACK received. Sending next chunk.")
-                        attempt = count  # Salir del bucle de reintento
-                        break  # Salir del bucle de espera
-                time.sleep(0.1)  # Pequeña pausa para evitar sobrecargar la CPU
-
-            nrf.listen = False  # Cambiar de nuevo al modo TX después de esperar el ACK
-
-            if attempt < count - 1:  # Si no se recibió el ACK, reintento
-                print("No ACK received. Retrying...")
-            attempt += 1
-
-        if attempt == count:  # Si se agotaron los intentos sin recibir ACK
-            print("Failed to receive ACK after maximum attempts. Moving to the next chunk.")
-            # Opcional: podrías elegir terminar el envío completamente aquí si es crítico
-            # break
-
-    print("Message transmission complete.")
-
+    while True:
+        chunks = [message[i:i + 32] for i in range(0, len(message), 32)]
+        
+        for chunk in chunks:
+            result = nrf.send(chunk)  # Enviar el chunk
+            # received_payload = nrf.read()  # Leer el payload recibido
+            if result:  # Si se recibe el ACK esperado
+                print("ACK received. Sending next chunk.")
+            else:
+                while not result:
+                    print("No ACK received. Retrying...")
+                    result = nrf.send(chunk)
+    
+            # Show percentage of message sent
+            print(f"Percentage of message sent: {round((chunks.index(chunk)+1)/len(chunks)*100, 2)}%")
+        
+        print("Message transmission complete.")
+        ack_payload = b'FINALTRANSMISSIO'  # Mensaje de finalización
+        nrf.listen = False  # Dejar de escuchar para poder enviar
+        sent_successfully = nrf.send(ack_payload)  # Enviar el mensaje de confirmación
+        if sent_successfully:
+            print("Confirmation message sent successfully.")
+        else:
+    #aqui es el unico sitio donde se podria hacer retransmi sin liarla demasiado
+            sent_successfully = nrf.send(ack_payload)
+            while not sent_successfully:
+                sent_successfully = nrf.send(ack_payload)
+            print("Confirmation message sent successfully.")
 
 def slave(timeout=6):
     nrf.listen = True  # put radio into RX mode and power up
