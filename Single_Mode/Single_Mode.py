@@ -274,6 +274,11 @@ def slave(timeout=1000):
         filename = complete_message.split(b'separaciofitxer')[-1].decode('utf-8')
         long_desc = len(filename) + len(b'separaciofitxer')
         complete_message = complete_message[:-long_desc]
+        # Adapt the filename if it is the comptetition filename.
+        if filename == "MTP-S24-MRM-C-TX.txt.7z":
+            filename = "MTP-S24-MRM-C-RX.txt.7z"
+        elif filename == "MTP-S24-NM-TX.txt.7z":
+            filename = "MTP-S24-NM-RX.txt.7z"
         with open(filename, 'wb') as file:
             file.write(complete_message)
         
@@ -309,7 +314,7 @@ def slave(timeout=1000):
 
     # Copy the extracted .txt file to the USB directory
     try:
-        filename_txt = filename.split(".txt")[0] + ".txt"
+        filename_txt = filename.split(".txt")[0] + ".txt"           
         print(f"Copying the message '{filename_txt}' to '/media/usb/'")
         shutil.copy2(filename_txt, "/media/usb/")
         print("Done!")
