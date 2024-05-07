@@ -52,34 +52,23 @@ WantedBy=multi-user.target
 ```
 3. Guardar i sortir
 
-4.
-  `sudo systemctl daemon-reload`
+4. `sudo systemctl daemon-reload`
 
-5. Permetre aquest servei
+5. Permetre aquest servei `sudo systemctl enable Single_Mode.service`
 
-`sudo systemctl enable Single_Mode.service`
+5. Començar el servei `sudo systemctl start Single_Mode.service`
 
-5. Començar el servei
-
-`sudo systemctl start Single_Mode.service`
-
-!! Si no funciona fer un reboot !! (`sudo reboot`)
+6. Reboot `sudo reboot`
 
 ### Per desautomatitzar-ho: 
 
 1. Obrim un terminal a la raspy
 
-2. Desactivem el servei 
+2. Desactivem el servei `sudo systemctl disable Single_Mode.service`
 
-`sudo systemctl disable Single_Mode.service`
+3. Parar el servei `sudo systemctl stop Single_Mode.service`
 
-3. Parar el servei 
-
-`sudo systemctl stop Single_Mode.service`
-
-4. Reboot
-
-`sudo reboot`
+4. Reboot `sudo reboot`
 
 
 ### Conexions
