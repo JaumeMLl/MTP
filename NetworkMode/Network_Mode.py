@@ -24,7 +24,7 @@ try:  # on Linux
 
     SPI_BUS = spidev.SpiDev()  # for a faster interface on linux
     CSN_PIN = 0  # use CE0 on default bus (even faster than using any pin)
-    CE_PIN = DigitalInOut(board.D23)  # using pin gpio23 (BCM numbering)
+    CE_PIN = DigitalInOut(board.D22)  # using pin gpio23 (BCM numbering)
 
 except ImportError:  # on CircuitPython only
     # using board.SPI() automatically selects the MCU's
@@ -34,7 +34,6 @@ except ImportError:  # on CircuitPython only
     # change these (digital output) pins accordingly
     CE_PIN = DigitalInOut(board.D4)
     CSN_PIN = DigitalInOut(board.D5)
-
 
 # initialize the nRF24L01 on the spi bus object
 nrf = RF24(SPI_BUS, CSN_PIN, CE_PIN)
@@ -47,7 +46,7 @@ nrf = RF24(SPI_BUS, CSN_PIN, CE_PIN)
 nrf.pa_level = -12
 ## to enable the custom ACK payload feature
 nrf.ack = False  # False disables again
-nrf.auto_ack = False
+nrf.auto_ack = True
 
 # set TX address of RX node into the TX pipe
 nrf.open_tx_pipe(BROADCAST_ID)
@@ -58,11 +57,9 @@ nrf.open_rx_pipe(1, BROADCAST_ID)
 nrf.pa_level = -18 # Power level of: 0, -6, -12, -18 dBm
 nrf.data_rate = 2 #Bit rate of: 2 (Mbps), 1 (Mbps), 250 (kbps); Insert value
 nrf.arc = 15 #Number of retransmits, default is 3. Int. Value: [0, 15]
-nrf.ard = 500 #Retransmission time from [250, 4000] in microseconds
+nrf.ard = 1500 #Retransmission time from [250, 4000] in microseconds
 #nrf.payload_length = 32
 nrf.crc = 2 #Default 2. Number of bytes for the CRC. Int. Value: [0, 2]
-nrf.flush_rx()
-nrf.flush_tx()
 
 #---- CLASSES ----#
 class CommsInfo:
@@ -96,7 +93,7 @@ def checkFileExists():
     Returns:
     - True if the file exists, False otherwise.
     """
-    path = '/home/pi/USB'  # Ruta completa al archivo en el directorio donde se monta el USB
+    path = FOLDERPATH  # Ruta completa al archivo en el directorio donde se monta el USB
     filelist = np.array([os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]) # Get the list of files in the directory
     filelist = filelist[np.where([x.endswith(".txt") and not x.startswith(".") for x in filelist])[0]] # Get the elements that end with ".txt" and does not start with "."
     if not os.path.exists(path):
@@ -186,7 +183,7 @@ def packageTransmission():
     Returns:
     - True if the package is transmitted successfully, False otherwise.
     """
-    path = '/media/usb'  # Ruta completa al archivo en el directorio /mnt/usbdrive
+    path = FOLDERPATH  # Ruta completa al archivo en el directorio /mnt/usbdrive
     filelist = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
     if not os.path.exists(path):
         print(f"Path not found: {path}")
@@ -195,9 +192,7 @@ def packageTransmission():
         print(f"No files in: {path}")
         return True
     
-    nrf.autoack = True
     data = transmitter(comms_info, filelist, TRANSMIT_ATTEMPTS, nrf)
-    nrf.autoack = False
     return data
 
 def sendFileRequest():
@@ -257,10 +252,13 @@ def packageReception():
     Returns:
     - True if the package is received successfully, False otherwise.
     """
-    nrf.auto_ack = True
+    #nrf.auto_ack = False
     nrf.channel = CHANNEL2
+    send_message(comms_info.destination_pipe_address, REQUEST_ACC_MSG, nrf)
+    time.sleep(0.1)
     receiver(comms_info, TIMEOUT, nrf)
-    nrf.auto_ack = False
+    return False
+    #nrf.auto_ack = False
 
 # State Machine
 class StateMachine:
@@ -268,7 +266,8 @@ class StateMachine:
         self.state = "Check File State"
 
     def run(self):
-        while True:
+        stop = False
+        while True and not stop:
             print(f"\n\n#--------- CURRENT STATE: {self.state} ---------#")
             print(f"Channel Information: {comms_info}")
             time.sleep(1)
@@ -280,12 +279,14 @@ class StateMachine:
                 self.request_accepted_state()
             elif self.state == "Packet Transmission State":
                 self.packet_transmission_state()
+                stop = True
             elif self.state == "Send Request State":
                 self.send_request_state()
             elif self.state == "Transmit Confirmation State":
                 self.transmit_confirmation_state()
             elif self.state == "Packet Reception State":
                 self.packet_reception_state()
+                stop = True
 
     def check_file_state(self):
         """
@@ -379,6 +380,7 @@ class StateMachine:
         """
         sendTransmitionAccepted()
         nrf.ack = True
+        comms_info.channel = CHANNEL2
         self.state = "Packet Reception State"
 
     def packet_reception_state(self):
@@ -388,20 +390,27 @@ class StateMachine:
         comms_info.channel = CHANNEL2
         nrf.channel = CHANNEL2
         packageReceivedFlag = packageReception()
+        nrf.flush_rx()
+        nrf.flush_tx()
+        nrf.power = False
+        nrf.power = True
         comms_info.channel = CHANNEL1
-        nrf.channel = CANNEL1
+        nrf.channel = CHANNEL1
         if packageReceivedFlag:
             ledOn()
             comms_info.listening_pipe_address = BROADCAST_ID
             comms_info.destination_pipe_address = BROADCAST_ID
             set_pipes(comms_info, nrf)
+            print(nrf.channel)
             self.state = "Packet Possession State"
         else:
             comms_info.listening_pipe_address = MY_PIPE_ID
             comms_info.destination_pipe_address = BROADCAST_ID
             set_pipes(comms_info, nrf)
             self.state = "Send Request State"
-
+        nrf.open_tx_pipe(BROADCAST_ID)
+        # set RX address of TX node into an RX pipe
+        nrf.open_rx_pipe(1, BROADCAST_ID)
 # Main
 if __name__ == "__main__":
     sm = StateMachine()

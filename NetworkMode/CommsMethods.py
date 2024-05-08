@@ -51,7 +51,7 @@ def send_message(destination_pipe_address, message, nrf):
     nrf.listen = False  # Dejar de escuchar para poder enviar
     nrf.open_tx_pipe(destination_pipe_address)
     data_to_send = MY_PIPE_ID+b": "+ message
-    print(f"About to send: {data_to_send}")
+    print(f"About to send: {data_to_send}", "TO:", destination_pipe_address)
     sent_successfully = nrf.send(data_to_send)  # Enviar el mensaje de confirmación
     print("aadf")
    
@@ -65,8 +65,10 @@ def send_message(destination_pipe_address, message, nrf):
 def transmitter(comms_info, filelist, count, nrf):
     #TODO implement transmitter
     r = False
-    file_content = filelist
-    nrf.auto_ack = True
+    file_path = FOLDERPATH+FILE_NAME
+    with open(file_path, 'rb') as file:
+        file_content = file.read()
+    #nrf.auto_ack = False
     nrf.listen = False  
     chunk_size = 31 
     total_chunks = len(file_content) // (chunk_size) + (1 if len(file_content) % (chunk_size) else 0)
@@ -93,7 +95,7 @@ tx_bit_flip = 0
 def send_chunk_sw(buffer, nrf):
     first_byte = tx_bit_flip
     buffer = bytes([first_byte]) + buffer
-    nrf.auto_ack = True
+    #nrf.auto_ack = False
     result = nrf.send(buffer)
     while not result:
         print("ERROR")
@@ -107,9 +109,11 @@ def receiver(comms_info, timeout, nrf):
     global rx_bit_flip
     print("starting reception")
     nrf.channel = CHANNEL2
-    nrf.auto_ack=True
+    #nrf.auto_ack=True
+    nrf.ack = False
     nrf.listen = True
     stop_wait = False
+    #nrf.load_ack(b"0",1)
     received_data = bytearray()
     start = time.monotonic()
     while (time.monotonic() - start) < timeout:
@@ -128,8 +132,12 @@ def receiver(comms_info, timeout, nrf):
     nrf.listen = False
     valid_data_end = len(received_data.rstrip(b'\x00'))
     valid_data = received_data[:valid_data_end]
-    with open("received_file.txt", "wb") as file:
+    if len(valid_data) == 0 :
+        print("Empty")
+        return False
+    with open(FOLDERPATH+FILE_NAME, "wb") as file:
         file.write(valid_data)
         print(f"Archivo reconstruido y guardado. Tamaño total: {len(received_data)} bytes.")
-    nrf.auto_ack=False
+    #nrf.auto_ack=False
     return True
+
