@@ -293,8 +293,13 @@ def slave(timeout=1000):
         blink_usb_LED()
         GPIO.output(USB_LED, GPIO.HIGH)
 
-    except Exception as e:
-        print(f"Failed to save the message in '/media/usb'. Error: {e}")
+    except FileNotFoundError as e:
+        print(f"Failed to find the file '{filename_txt}' for copying. Error: {e}")
+    except PermissionError as e:
+        print(f"Permission denied while copying the file '{filename_txt}'. Error: {e}")
+    except OSError as e:
+        print(f"Error while accessing the file '{filename_txt}'. Error: {e}")
+
 
 def set_role(): 
     """Set the role using GPIO switches."""
