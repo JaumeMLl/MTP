@@ -107,7 +107,7 @@ def transmitter(comms_info, filelist, count, nrf):
     #TODO implement transmitter
     time.sleep(1)
     r = False
-    file_path = FOLDERPATH+FILE_NAME
+    file_path = FOLDER_PATH+FILE_NAME
     with open(file_path, 'rb') as file:
         file_content = file.read()
     #nrf.auto_ack = True
@@ -180,7 +180,7 @@ def receiver(comms_info, timeout, nrf):
     if len(valid_data) == 0 :
         print("Empty")
         return False
-    with open(FOLDERPATH+FILE_NAME, "wb") as file:
+    with open(FOLDER_PATH+FILE_NAME, "wb") as file:
         file.write(valid_data)
         print(f"Archivo reconstruido y guardado. Tamaño total: {len(received_data)} bytes.")
     #nrf.auto_ack=False

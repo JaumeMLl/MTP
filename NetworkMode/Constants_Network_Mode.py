@@ -8,8 +8,8 @@ TEAM_C1 = b"pipC1"
 TEAM_C2 = b"pipC2"
 BROADCAST_ID = b"Bcast"
 
-FOLDERPATH="/home/pi/NM_Folder"
 #USB_PATH="/media/usb"
+FOLDER_PATH="/media/usb"
 FILE_NAME = "/NM.txt"
 
 
