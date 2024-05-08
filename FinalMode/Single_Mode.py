@@ -127,7 +127,7 @@ def blink_usb_LED():
 def master(filelist):
     """Function for Master role"""
     decompressed_successfully = False
-    counter = 0
+    #counter = 0
     while not decompressed_successfully:
         counter = counter+1
         GPIO.output(TRANSMITTER_LED, GPIO.HIGH)
@@ -201,10 +201,10 @@ def master(filelist):
                 elif received_payload == COMPRESSION_ERROR: # If the receiver failed to decompress the file, sent it again.
                     logging.info("The receiver could not decompress the file, retrying...")
                     print("The receiver could not decompress the file, retrying...")
-                    if counter == 3:
-                        nrf.channel == B
-                        counter = 0
-                        print("Channel changed to:", nrf.channel)
+                    #if counter == 3:
+                    #    nrf.channel == B
+                    #    counter = 0
+                    #    print("Channel changed to:", nrf.channel)
                     veredict = True
 
 def slave(timeout=1000):
