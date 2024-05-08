@@ -9,7 +9,7 @@ import threading
 import numpy as np
 import shutil
 import logging
-from Network_Mode import *
+from Network_Mode import StateMachine
 
 from circuitpython_nrf24l01.rf24 import RF24
 
@@ -72,7 +72,7 @@ nrf.flush_rx()
 nrf.flush_tx()
 nrf.arc = 15 #Number of retransmits, default is 3. Int. Value: [0, 15]
 # Set channel, from 1 to 125
-nrf.channel = 1
+nrf.channel = 125
 nrf.data_rate = 250 # RF24_250KBPS (250kbps), RF24_1MBPS (1Mbps), RF24_2MBPS (2Mbps)
 
 # addresses needs to be in a buffer protocol object (bytearray)
@@ -243,6 +243,8 @@ def slave(timeout=1000):
         # Adapt the filename if it is the comptetition filename.
         if filename == "MTP-S24-MRM-C-TX.txt.7z":
             filename = "MTP-S24-MRM-C-RX.txt.7z"
+        elif filename == "MTP-S24-SRI-TX.txt.7z":
+            filename = "MTP-S24-SRI-RX.txt.7z"
         elif filename == "MTP-S24-NM-TX.txt.7z":
             filename = "MTP-S24-NM-RX.txt.7z"
         with open(filename, 'wb') as file:
