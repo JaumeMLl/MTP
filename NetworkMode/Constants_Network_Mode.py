@@ -8,9 +8,9 @@ TEAM_C1 = b"pipC1"
 TEAM_C2 = b"pipC2"
 BROADCAST_ID = b"Bcast"
 
-#USB_PATH="/media/usb"
+USB_PATH="/media/usb/"
 FOLDER_PATH="/media/usb"
-FILE_NAME = "/NM.txt"
+FILE_NAME = "NM.txt"
 
 
 MY_PIPE_ID = TEAM_C1

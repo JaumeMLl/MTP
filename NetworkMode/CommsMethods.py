@@ -1,6 +1,7 @@
 import time
 import RPi.GPIO as GPIO
 import os
+import shutil
 
 from Constants_Network_Mode import *
 
@@ -180,8 +181,23 @@ def receiver(comms_info, timeout, nrf):
     if len(valid_data) == 0 :
         print("Empty")
         return False
-    with open(FOLDER_PATH+FILE_NAME, "wb") as file:
+    
+    with open(FILE_NAME, "wb") as file:
         file.write(valid_data)
         print(f"Archivo reconstruido y guardado. Tamaño total: {len(received_data)} bytes.")
     #nrf.auto_ack=False
+
+    txt_files = [f for f in os.listdir('.') if f.endswith('.txt')]
+
+    # Copy the extracted .txt file to the USB directory
+    try:
+        for txt_file in txt_files:
+            shutil.copy(txt_file, USB_PATH)
+            print(f"Received message '{txt_file}' also stored in '/media/usb/'")
+            #newfile_leds()
+            #blink_success_leds(10, USB_LED, USB_LED) 
+            #reset_leds()
+    except Exception as e:
+        print(f"Failed to save the message in '/media/usb'. Error: {e}")
+
     return True
