@@ -133,10 +133,10 @@ def transmitter(comms_info, filelist, count, nrf):
         print("Package Transmission Failed")
     return r 
 
-global tx_bit_flip
 tx_bit_flip = 0
 
 def send_chunk_sw(buffer, nrf):
+    global tx_bit_flip
     first_byte = tx_bit_flip
     buffer = bytes([first_byte]) + buffer
     result = nrf.send(buffer)
