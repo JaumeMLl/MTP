@@ -1,0 +1,22 @@
+ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+update_config=1
+
+network={
+    ssid="MG13"
+    psk="aa123456"
+}
+
+network={
+    ssid="Gisela"
+    psk="gisela123"
+}
+
+network={
+    ssid="Jaume"
+    psk="12345678a"
+}
+
+network={
+    ssid="Pixel6"
+    psk="12345678abc"
+}
