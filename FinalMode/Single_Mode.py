@@ -332,7 +332,7 @@ def set_role():
     else:  # If neither GPIO pin 2 nor GPIO pin 3 is on
         GPIO.output(NM_LED, GPIO.LOW)
         print("Receiver role selected.")
-        print("Switch NM state:", switch_nm_state)
+        print("Switch NM state:", switch_nm_state) 
         print("Switch TXRX state:", switch_txrx_state)
         # set TX address of RX node into the TX pipe
         nrf.open_tx_pipe(address[1])  # always uses pipe 1
@@ -358,10 +358,14 @@ if __name__ == "__main__":
     GPIO.output(USB_LED, GPIO.HIGH)
     print("Waiting for start switch...") 
     start = False
+    start_switch = GPIO.input(START_SWITCH)
+    print("Switch start state:", start_switch) 
     while not start:
-         if GPIO.input(START_SWITCH): 
-             start = True
-         time.sleep(0.1)
+        print("Switch start state:", start_switch) 
+        if start_switch: 
+            start = True
+        time.sleep(0.1)
+        start_switch = GPIO.input(START_SWITCH)
     try:
         set_role()
         time.sleep(5)
