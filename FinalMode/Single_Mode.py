@@ -244,6 +244,7 @@ def slave(timeout=1000):
         print("File Name:", filename)
         if filename == "MTP-S24-MRM-C-TX.txt.7z":
             filename_rx = "MTP-S24-MRM-C-RX.txt.7z"
+            print("File Name RX:", filename_rx)
         elif filename == "MTP-S24-SRI-TX.txt.7z":
             filename_rx = "MTP-S24-SRI-RX.txt.7z"
         elif filename == "MTP-S24-NM-TX.txt.7z":
