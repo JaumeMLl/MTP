@@ -129,7 +129,7 @@ def master(filelist):
     decompressed_successfully = False
     #counter = 0
     while not decompressed_successfully:
-        counter = counter+1
+        #counter = counter+1
         GPIO.output(TRANSMITTER_LED, GPIO.HIGH)
         nrf.listen = True
         nrf.listen = False
