@@ -240,6 +240,7 @@ def slave(timeout=1000):
         filename = complete_message.split(b'separaciofitxer')[-1].decode('utf-8')
         long_desc = len(filename) + len(b'separaciofitxer')
         complete_message = complete_message[:-long_desc]
+        '''
         # Adapt the filename if it is the comptetition filename.
         if filename == "MTP-S24-MRM-C-TX.txt.7z":
             filename = "MTP-S24-MRM-C-RX.txt.7z"
@@ -247,6 +248,7 @@ def slave(timeout=1000):
             filename = "MTP-S24-SRI-RX.txt.7z"
         elif filename == "MTP-S24-NM-TX.txt.7z":
             filename = "MTP-S24-NM-RX.txt.7z"
+        '''
         with open(filename, 'wb') as file:
             file.write(complete_message)
         
