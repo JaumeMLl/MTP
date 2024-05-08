@@ -90,7 +90,7 @@ def checkFileExists():
     Returns:
     - True if the file exists, False otherwise.
     """
-    path = FOLDERPATH  # Ruta completa al archivo en el directorio donde se monta el USB
+    path = USB_PATH  # Ruta completa al archivo en el directorio donde se monta el USB
     filelist = np.array([os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]) # Get the list of files in the directory
     filelist = filelist[np.where([x.endswith(".txt") and not x.startswith(".") for x in filelist])[0]] # Get the elements that end with ".txt" and does not start with "."
     if not os.path.exists(path):
@@ -183,7 +183,7 @@ def packageTransmission():
     Returns:
     - True if the package is transmitted successfully, False otherwise.
     """
-    path = FOLDERPATH  # Ruta completa al archivo en el directorio /mnt/usbdrive
+    path = USB_PATH  # Ruta completa al archivo en el directorio /mnt/usbdrive
     filelist = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
     if not os.path.exists(path):
         print(f"Path not found: {path}")
