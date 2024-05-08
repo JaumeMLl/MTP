@@ -1,7 +1,6 @@
 import time
 import RPi.GPIO as GPIO
 import os
-import shutil
 
 from Constants_Network_Mode import *
 
@@ -134,10 +133,10 @@ def transmitter(comms_info, filelist, count, nrf):
         print("Package Transmission Failed")
     return r 
 
+global tx_bit_flip
 tx_bit_flip = 0
 
 def send_chunk_sw(buffer, nrf):
-    global tx_bit_flip
     first_byte = tx_bit_flip
     buffer = bytes([first_byte]) + buffer
     result = nrf.send(buffer)
@@ -181,18 +180,8 @@ def receiver(comms_info, timeout, nrf):
     if len(valid_data) == 0 :
         print("Empty")
         return False
-    with open(FILE_NAME, "wb") as file:
+    with open(FOLDERPATH+FILE_NAME, "wb") as file:
         file.write(valid_data)
         print(f"Archivo reconstruido y guardado. Tamaño total: {len(received_data)} bytes.")
-    # Buscar los archivos .txt en el directorio de trabajo
-    txt_files = [f for f in os.listdir('.') if f.endswith('.txt')]
-    try:
-        for txt_file in txt_files:
-            shutil.copy(txt_file, USB_PATH)
-            print(f"Received message '{txt_file}' also stored in {USB_PATH}'")
-            #blink_success_leds(10, USB_LED, USB_LED) 
-            #reset_leds()
-    except Exception as e:
-        print(f"Failed to save the message in '/media/usb'. Error: {e}")
     #nrf.auto_ack=False
     return True

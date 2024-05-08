@@ -24,7 +24,7 @@ try:  # on Linux
 
     SPI_BUS = spidev.SpiDev()  # for a faster interface on linux
     CSN_PIN = 0  # use CE0 on default bus (even faster than using any pin)
-    CE_PIN = DigitalInOut(board.D23)  # using pin gpio23 (BCM numbering)
+    CE_PIN = DigitalInOut(board.D22)  # using pin gpio23 (BCM numbering)
 
 except ImportError:  # on CircuitPython only
     # using board.SPI() automatically selects the MCU's
@@ -90,7 +90,7 @@ def checkFileExists():
     Returns:
     - True if the file exists, False otherwise.
     """
-    path = USB_PATH  # Ruta completa al archivo en el directorio donde se monta el USB
+    path = FOLDERPATH  # Ruta completa al archivo en el directorio donde se monta el USB
     filelist = np.array([os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]) # Get the list of files in the directory
     filelist = filelist[np.where([x.endswith(".txt") and not x.startswith(".") for x in filelist])[0]] # Get the elements that end with ".txt" and does not start with "."
     if not os.path.exists(path):
@@ -183,7 +183,7 @@ def packageTransmission():
     Returns:
     - True if the package is transmitted successfully, False otherwise.
     """
-    path = USB_PATH  # Ruta completa al archivo en el directorio /mnt/usbdrive
+    path = FOLDERPATH  # Ruta completa al archivo en el directorio /mnt/usbdrive
     filelist = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
     if not os.path.exists(path):
         print(f"Path not found: {path}")
