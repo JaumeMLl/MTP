@@ -77,7 +77,7 @@ nrf.flush_rx()
 nrf.flush_tx()
 nrf.arc = 15 #Number of retransmits, default is 3. Int. Value: [0, 15]
 # Set channel, from 1 to 125
-nrf.channel = 125
+nrf.channel = B
 nrf.data_rate = 250 # RF24_250KBPS (250kbps), RF24_1MBPS (1Mbps), RF24_2MBPS (2Mbps)
 
 # addresses needs to be in a buffer protocol object (bytearray)
@@ -127,9 +127,9 @@ def blink_usb_LED():
 def master(filelist):
     """Function for Master role"""
     decompressed_successfully = False
-    #counter = 0
+    counter = 0
     while not decompressed_successfully:
-        #counter = counter+1
+        counter = counter+1
         GPIO.output(TRANSMITTER_LED, GPIO.HIGH)
         nrf.listen = True
         nrf.listen = False
@@ -201,10 +201,10 @@ def master(filelist):
                 elif received_payload == COMPRESSION_ERROR: # If the receiver failed to decompress the file, sent it again.
                     logging.info("The receiver could not decompress the file, retrying...")
                     print("The receiver could not decompress the file, retrying...")
-                    #if counter == 3:
-                    #    nrf.channel == B
-                    #    counter = 0
-                    #    print("Channel changed to:", nrf.channel)
+                    if counter == 3:
+                        nrf.channel == A
+                        counter = 0
+                        print("Channel changed to:", nrf.channel)
                     veredict = True
 
 def slave(timeout=1000):
