@@ -241,6 +241,7 @@ def slave(timeout=1000):
         long_desc = len(filename) + len(b'separaciofitxer')
         complete_message = complete_message[:-long_desc]
         # Adapt the filename if it is the comptetition filename.
+        print("File Name:", filename)
         if filename == "MTP-S24-MRM-C-TX.txt.7z":
             filename_rx = "MTP-S24-MRM-C-RX.txt.7z"
         elif filename == "MTP-S24-SRI-TX.txt.7z":
