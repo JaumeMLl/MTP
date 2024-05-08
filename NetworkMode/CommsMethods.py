@@ -2,6 +2,7 @@ import time
 import RPi.GPIO as GPIO
 import os
 import shutil
+import numpy as np
 
 from Constants_Network_Mode import *
 
@@ -108,8 +109,11 @@ def transmitter(comms_info, filelist, count, nrf):
     #TODO implement transmitter
     time.sleep(1)
     r = False
-    file_path = FOLDER_PATH+FILE_NAME
-    with open(file_path, 'rb') as file:
+    path = FOLDER_PATH  # Ruta completa al archivo en el directorio /mnt/usbdrive
+    filelist = np.array([os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]) # Get the list of files in the directory
+    filelist = filelist[np.where([x.endswith(".txt") and not x.startswith(".") for x in filelist])[0]] # Get the elements that end with ".txt" and does not start with "."
+    filepath = filelist[0]
+    with open(filepath, 'rb') as file:
         file_content = file.read()
     #nrf.auto_ack = True
     nrf.ack=False
