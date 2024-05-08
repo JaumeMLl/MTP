@@ -362,7 +362,7 @@ if __name__ == "__main__":
     print("USB unit connected")
     GPIO.output(USB_LED, GPIO.HIGH)
     print("Waiting for start switch...") 
-    start = True
+    start = False
     start_switch = GPIO.input(START_SWITCH)
     print("Switch start state:", start_switch) 
     while not start:
