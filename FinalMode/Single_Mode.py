@@ -259,6 +259,8 @@ def slave(timeout=1000):
             
             nrf.listen = False  # put radio in TX mode and power up
             sent_successfully = nrf.send(COMPRESSION_CONFIRMED)
+            print("Sent successfully:", sent_successfully)
+            logging.info("Sent successfully:", sent_successfully)
             while not sent_successfully:
                 print("Error sending the confirmation message, retrying...")
                 sent_successfully = nrf.send(COMPRESSION_CONFIRMED)
