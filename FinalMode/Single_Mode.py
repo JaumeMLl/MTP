@@ -132,7 +132,6 @@ def master(filelist):
             nrf.send(b'hola')
             nrf.read()
         
-        
         filepath = filelist[0] # Parse the first file in the directory
         # Compress the file using 7z
         os.system(f"yes | 7z a {filepath}.7z {filepath}")
@@ -358,10 +357,7 @@ if __name__ == "__main__":
     print("USB unit connected")
     GPIO.output(USB_LED, GPIO.HIGH)
     print("Waiting for start switch...") 
-    start = False
-    while not start:
-         if not GPIO.input(START_SWITCH): # NOT perquè està soldat al revés hahaha
-             start = True
+    while not GPIO.input(START_SWITCH): 
          time.sleep(0.1)
     try:
         set_role()
