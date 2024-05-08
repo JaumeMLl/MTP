@@ -251,7 +251,16 @@ def slave(timeout=1000):
         filename = complete_message.split(b'separaciofitxer')[-1].decode('utf-8')
         long_desc = len(filename) + len(b'separaciofitxer')
         complete_message = complete_message[:-long_desc]
-        with open(filename, 'wb') as file:
+        
+        if filename == "MTP-S24-MRM-C-TX.txt.7z":
+            filename_rx = "MTP-S24-MRM-C-RX.txt.7z"
+        elif filename == "MTP-S24-SRI-TX.txt.7z":
+            filename_rx = "MTP-S24-SRI-RX.txt.7z"
+        elif filename == "MTP-S24-NM-TX.txt.7z":
+            filename_rx = "MTP-S24-NM-RX.txt.7z"
+        
+        os.rename(filename, filename_rx)
+        with open(filename_rx, 'wb') as file:
             file.write(complete_message)
         # Extract the 7z file
         output = os.system(f"yes | 7z x {filename} -o.")
@@ -284,19 +293,11 @@ def slave(timeout=1000):
                 time.sleep(0.1)
             print(f"Soliciting file again. Sent: {sent_successfully}")
             
-    '''
+    
     # Copy the extracted .txt file to the USB directory
     try:
         filename_txt = filename.split(".txt")[0] + ".txt"           
-        # Adapt the filename if it is the comptetition filename.
-        print("File Name:", filename_txt)
-        if filename_txt == "MTP-S24-MRM-C-TX.txt":
-            filename_txt = "MTP-S24-MRM-C-RX.txt"
-        elif filename_txt == "MTP-S24-SRI-TX.txt":
-            filename_txt = "MTP-S24-SRI-RX.txt"
-        elif filename_txt == "MTP-S24-NM-TX.txt":
-            filename_txt = "MTP-S24-NM-RX.txt"
-        print(f"Copying the message '{filename}' to '/media/usb/'")
+        print(f"Copying the message '{filename_txt}' to '/media/usb/'")
         shutil.copy2(filename_txt, "/media/usb/")
         print("Done!")
         blink_usb_LED()
@@ -305,38 +306,6 @@ def slave(timeout=1000):
     except Exception as e:
         print(f"Failed to save the message in '/media/usb'. Error: {e}")
     
-    '''
-    try:
-        filename_txt = filename.split(".txt")[0] + ".txt"
-        # Adapt the filename if it is the competition filename.
-        print("File Name:", filename_txt)
-        if filename_txt == "MTP-S24-MRM-C-TX.txt":
-            new_filename = "MTP-S24-MRM-C-RX.txt"
-        elif filename_txt == "MTP-S24-SRI-TX.txt":
-            new_filename = "MTP-S24-SRI-RX.txt"
-        elif filename_txt == "MTP-S24-NM-TX.txt":
-            new_filename = "MTP-S24-NM-RX.txt"
-        else:
-            new_filename = filename_txt  # Keep the original filename if no match found
-        
-        # Construct the full paths for the old and new filenames
-        old_filepath = os.path.join("/media/usb/", filename_txt)
-        new_filepath = os.path.join("/media/usb/", new_filename)
-        
-        # Rename the file
-        os.rename(old_filepath, new_filepath)
-        print(f"File '{filename_txt}' renamed to '{new_filename}'.")
-        
-        blink_usb_LED()
-        GPIO.output(USB_LED, GPIO.HIGH)
-
-    except FileNotFoundError:
-        print(f"File '{filename_txt}' not found.")
-    except FileExistsError:
-        print(f"File '{new_filename}' already exists.")
-    except Exception as e:
-        print(f"Failed to rename the file. Error: {e}")
-
 
 
 def set_role(): 
