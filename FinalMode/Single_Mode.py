@@ -251,7 +251,7 @@ def slave(timeout=1000):
         filename = complete_message.split(b'separaciofitxer')[-1].decode('utf-8')
         long_desc = len(filename) + len(b'separaciofitxer')
         complete_message = complete_message[:-long_desc]
-        
+        '''
         #DIRECTORIOS RECEIVER
         dir = "/home/pi/MTP/FinalMode"
         #dir = /home/pi/SM
@@ -266,7 +266,8 @@ def slave(timeout=1000):
         ra = os.path.join(dir, filename)
         rn = os.path.join(dir, filename_rx)
         os.rename(ra, rn)
-        with open(filename_rx, 'wb') as file:
+        '''
+        with open(filename, 'wb') as file:
             file.write(complete_message)
         # Extract the 7z file
         output = os.system(f"yes | 7z x {filename} -o.")
