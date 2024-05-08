@@ -240,20 +240,10 @@ def slave(timeout=1000):
         filename = complete_message.split(b'separaciofitxer')[-1].decode('utf-8')
         long_desc = len(filename) + len(b'separaciofitxer')
         complete_message = complete_message[:-long_desc]
-        # Adapt the filename if it is the comptetition filename.
-        print("File Name:", filename)
-        if filename == "MTP-S24-MRM-C-TX.txt.7z":
-            filename_rx = "MTP-S24-MRM-C-RX.txt.7z"
-            print("File Name RX:", filename_rx)
-        elif filename == "MTP-S24-SRI-TX.txt.7z":
-            filename_rx = "MTP-S24-SRI-RX.txt.7z"
-        elif filename == "MTP-S24-NM-TX.txt.7z":
-            filename_rx = "MTP-S24-NM-RX.txt.7z"
-        with open(filename_rx, 'wb') as file:
+        with open(filename, 'wb') as file:
             file.write(complete_message)
-        
         # Extract the 7z file
-        output = os.system(f"yes | 7z x {filename_rx} -o.")
+        output = os.system(f"yes | 7z x {filename} -o.")
 
         if output == 0:
             print("File decompressed successfully, informing the transmitter")
@@ -286,19 +276,23 @@ def slave(timeout=1000):
 
     # Copy the extracted .txt file to the USB directory
     try:
-        filename_txt = filename_rx.split(".txt")[0] + ".txt"           
+        filename_txt = filename.split(".txt")[0] + ".txt"           
+        # Adapt the filename if it is the comptetition filename.
+        print("File Name:", filename_txt)
+        if filename_txt == "MTP-S24-MRM-C-TX.txt":
+            filename_txt = "MTP-S24-MRM-C-RX.txt"
+        elif filename_txt == "MTP-S24-SRI-TX.txt":
+            filename_txt = "MTP-S24-SRI-RX.txt"
+        elif filename_txt == "MTP-S24-NM-TX.txt":
+            filename_txt = "MTP-S24-NM-RX.txt"
         print(f"Copying the message '{filename_txt}' to '/media/usb/'")
         shutil.copy2(filename_txt, "/media/usb/")
         print("Done!")
         blink_usb_LED()
         GPIO.output(USB_LED, GPIO.HIGH)
 
-    except FileNotFoundError as e:
-        print(f"Failed to find the file '{filename_txt}' for copying. Error: {e}")
-    except PermissionError as e:
-        print(f"Permission denied while copying the file '{filename_txt}'. Error: {e}")
-    except OSError as e:
-        print(f"Error while accessing the file '{filename_txt}'. Error: {e}")
+    except Exception as e:
+        print(f"Failed to save the message in '/media/usb'. Error: {e}")
 
 
 def set_role(): 
