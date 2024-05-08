@@ -294,6 +294,7 @@ class StateMachine:
         """
         Checks if a file exists and transitions accordingly.
         """
+        wait_for_usb()
         if checkFileExists():
             ledOn()
             comms_info.listening_pipe_address = BROADCAST_ID

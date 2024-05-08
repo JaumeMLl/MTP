@@ -196,7 +196,7 @@ def receiver(comms_info, timeout, nrf):
     # Copy the extracted .txt file to the USB directory
     try:
         for txt_file in txt_files:
-            shutil.copy(txt_file, USB_PATH)
+            shutil.copy(txt_file, FOLDER_PATH)
             print(f"Received message '{txt_file}' also stored in '/media/usb/'")
             #newfile_leds()
             #blink_success_leds(10, USB_LED, USB_LED) 
@@ -205,3 +205,26 @@ def receiver(comms_info, timeout, nrf):
         print(f"Failed to save the message in '/media/usb'. Error: {e}")
 
     return True
+
+# Initialize the leds
+GPIO.setmode(GPIO.BCM)
+
+GPIO.setup(TRANSMITTER_LED, GPIO.OUT)
+GPIO.setup(RECEIVER_LED, GPIO.OUT)
+GPIO.setup(CONNECTION_LED, GPIO.OUT)
+GPIO.setup(NM_LED, GPIO.OUT)
+GPIO.setup(USB_LED, GPIO.OUT)
+GPIO.setup(NM_SWITCH, GPIO.IN)
+GPIO.setup(TXRX_SWITCH, GPIO.IN)
+
+def wait_for_usb():
+   # Check number of files in the USB drive
+    while True:
+        num_devices = len(os.listdir('/dev/bus/usb'))  # Checking USB devices
+        if num_devices >= 1:    # 1 !!
+            GPIO.output(USB_LED, GPIO.HIGH)
+            time.sleep(0.5)
+            break
+        else:
+            GPIO.output(USB_LED, GPIO.LOW)
+            time.sleep(0.5)
