@@ -252,14 +252,20 @@ def slave(timeout=1000):
         long_desc = len(filename) + len(b'separaciofitxer')
         complete_message = complete_message[:-long_desc]
         
+        #DIRECTORIOS RECEIVER
+        dir = "/home/pi/MTP/FinalMode"
+        #dir = /home/pi/SM
+
         if filename == "MTP-S24-MRM-C-TX.txt.7z":
             filename_rx = "MTP-S24-MRM-C-RX.txt.7z"
         elif filename == "MTP-S24-SRI-TX.txt.7z":
             filename_rx = "MTP-S24-SRI-RX.txt.7z"
         elif filename == "MTP-S24-NM-TX.txt.7z":
             filename_rx = "MTP-S24-NM-RX.txt.7z"
-        
-        os.rename(filename, filename_rx)
+        # Ruta completa del archivo actual
+        ra = os.path.join(dir, filename)
+        rn = os.path.join(dir, filename_rx)
+        os.rename(ra, rn)
         with open(filename_rx, 'wb') as file:
             file.write(complete_message)
         # Extract the 7z file
