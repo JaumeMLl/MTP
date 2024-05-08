@@ -357,7 +357,10 @@ if __name__ == "__main__":
     print("USB unit connected")
     GPIO.output(USB_LED, GPIO.HIGH)
     print("Waiting for start switch...") 
-    while not GPIO.input(START_SWITCH): 
+    start = False
+    while not start:
+         if GPIO.input(START_SWITCH): 
+             start = True
          time.sleep(0.1)
     try:
         set_role()
