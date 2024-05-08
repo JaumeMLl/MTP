@@ -8,10 +8,12 @@ TEAM_C1 = b"pipC1"
 TEAM_C2 = b"pipC2"
 BROADCAST_ID = b"Bcast"
 
-FOLDERPATH = "/home/pi/USB"
-FILE_NAME = "/NM.txt"
+FOLDERPATH="/home/pi/SM/final/FinalMode"
+USB_PATH="/media/usb"
+FILE_NAME = "NM.txt"
 
-MY_PIPE_ID = TEAM_B1
+
+MY_PIPE_ID = TEAM_C1
 
 TIMEOUT = 10
 BACK_OFF_TIME = 2

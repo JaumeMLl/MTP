@@ -24,7 +24,7 @@ try:  # on Linux
 
     SPI_BUS = spidev.SpiDev()  # for a faster interface on linux
     CSN_PIN = 0  # use CE0 on default bus (even faster than using any pin)
-    CE_PIN = DigitalInOut(board.D22)  # using pin gpio23 (BCM numbering)
+    CE_PIN = DigitalInOut(board.D23)  # using pin gpio23 (BCM numbering)
 
 except ImportError:  # on CircuitPython only
     # using board.SPI() automatically selects the MCU's
@@ -43,23 +43,20 @@ nrf = RF24(SPI_BUS, CSN_PIN, CE_PIN)
 #                21 = bus 2, CE1  # enable SPI bus 1 prior to running this
 
 # Change the Power Amplifier level
-nrf.pa_level = -12
+nrf.pa_level = -18
 ## to enable the custom ACK payload feature
 nrf.ack = False  # False disables again
 nrf.auto_ack = True
+nrf.data_rate = 2 #Bit rate of: 2 (Mbps), 1 (Mbps), 250 (kbps); Insert value
+nrf.arc = 15 #Number of retransmits, default is 3. Int. Value: [0, 15]
+nrf.ard = 1500 #Retransmission time from [250, 4000] in microseconds
+nrf.crc = 2 #Default 2. Number of bytes for the CRC. Int. Value: [0, 2]
 
 # set TX address of RX node into the TX pipe
 nrf.open_tx_pipe(BROADCAST_ID)
 
 # set RX address of TX node into an RX pipe
 nrf.open_rx_pipe(1, BROADCAST_ID)
-
-nrf.pa_level = -18 # Power level of: 0, -6, -12, -18 dBm
-nrf.data_rate = 2 #Bit rate of: 2 (Mbps), 1 (Mbps), 250 (kbps); Insert value
-nrf.arc = 15 #Number of retransmits, default is 3. Int. Value: [0, 15]
-nrf.ard = 1500 #Retransmission time from [250, 4000] in microseconds
-#nrf.payload_length = 32
-nrf.crc = 2 #Default 2. Number of bytes for the CRC. Int. Value: [0, 2]
 
 #---- CLASSES ----#
 class CommsInfo:
@@ -163,16 +160,19 @@ def needToBackOff():
     nrf.listen = True  # put radio into RX mode and power up
 
     start = time.monotonic()
-    for count in range(BACK_OFF_COUNT):
+    for count in range(0):
         if nrf.available():
+            print(nrf.read())
             print("Need To Back Off")
-            time.sleep(BACK_OFF_TIME)  # Wait for a short time before checking again
+            time.sleep(0.1)  # Wait for a short time before checking again
         else:
             return False
     
-    return True
+    return False
 
 def packageTransmission():
+    #nrf.auto_ack = False
+    wait_for_desired_message(comms_info, REQUEST_ACC_MSG, TIMEOUT, nrf)
     """
     Manages the transmission of a data package.
     Changes to Channel 2
@@ -345,6 +345,10 @@ class StateMachine:
         nrf.channel = CHANNEL2
         if not needToBackOff():
             packageTransmittedFlag = packageTransmission()
+            nrf.flush_rx()
+            nrf.flush_tx()
+            nrf.power = False
+            nrf.power = True
             print("Packet Sent Correctly:", packageTransmittedFlag)
         
         comms_info.channel = CHANNEL1
@@ -353,6 +357,10 @@ class StateMachine:
         comms_info.listening_pipe_address = BROADCAST_ID
         comms_info.destination_pipe_address = BROADCAST_ID
         set_pipes(comms_info, nrf)
+        print("CHANNEL IS : ", nrf.channel)
+        nrf.open_tx_pipe(BROADCAST_ID)
+        # set RX address of TX node into an RX pipe
+        nrf.open_rx_pipe(1, BROADCAST_ID)
         self.state = "Packet Possession State"
 
     def send_request_state(self):

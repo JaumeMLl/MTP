@@ -1,6 +1,7 @@
 import time
 import RPi.GPIO as GPIO
 import os
+import shutil
 
 from Constants_Network_Mode import *
 
@@ -47,6 +48,47 @@ def wait_for_desired_message(comms_info, desired_message, timeout, nrf):
     print(f"Desired Message {desired_message} NOT received")
     return False
 
+def wait_long_desired_message(comms_info, desired_message, timeout, nrf):
+    """
+    Waits until it receives the message matching the desired value on the given pipe, or until the timeout_ms expires.
+    
+    Parameters:
+    - listening_pipe_address: The pipe being listened to for incoming messages.
+    - destination_pipe_address: The pipe where the response should be sent.
+    - desired_message: The specific message expected to be received.
+    - timeout: Timeout period in seconds.
+
+    Returns:
+    - True if the desired_message is received within the timeout period, False otherwise.
+    """
+    nrf.listen = True  # put radio into RX mode and power up
+
+    start = time.monotonic()
+    
+
+    while not nrf.available():
+        a=1
+    if nrf.available():
+        # Read the received message
+        received_message = []
+        received_message = nrf.read()
+        print(f"Received Message: {received_message}")
+
+        actual_message = received_message[5+2:]  # Skip 5 bytes for responder ID and 2 bytes for separator ": "
+
+        # Check if the responder ID matches and the actual message is the desired one
+        if actual_message == desired_message:
+            print(f"Desired Message {desired_message} received")
+            # Extract the responder ID and the actual message from the received message
+            comms_info.destination_pipe_address = bytes(received_message[:5])
+            return True  # Message received successfully
+        else:
+            print("Message not recognized")
+    time.sleep(0.1)  # Wait for a short time before checking again
+    
+    print(f"Desired Message {desired_message} NOT received")
+    return False
+
 def send_message(destination_pipe_address, message, nrf):
     nrf.listen = False  # Dejar de escuchar para poder enviar
     nrf.open_tx_pipe(destination_pipe_address)
@@ -64,13 +106,16 @@ def send_message(destination_pipe_address, message, nrf):
 
 def transmitter(comms_info, filelist, count, nrf):
     #TODO implement transmitter
+    time.sleep(1)
     r = False
     file_path = FOLDERPATH+FILE_NAME
     with open(file_path, 'rb') as file:
         file_content = file.read()
-    #nrf.auto_ack = False
+    #nrf.auto_ack = True
+    nrf.ack=False
     nrf.listen = False  
     chunk_size = 31 
+    stop_wait = False
     total_chunks = len(file_content) // (chunk_size) + (1 if len(file_content) % (chunk_size) else 0)
     for i in range(total_chunks):
         start = i * (chunk_size)
@@ -89,13 +134,12 @@ def transmitter(comms_info, filelist, count, nrf):
         print("Package Transmission Failed")
     return r 
 
-global tx_bit_flip
 tx_bit_flip = 0
 
 def send_chunk_sw(buffer, nrf):
+    global tx_bit_flip
     first_byte = tx_bit_flip
     buffer = bytes([first_byte]) + buffer
-    #nrf.auto_ack = False
     result = nrf.send(buffer)
     while not result:
         print("ERROR")
@@ -111,9 +155,11 @@ def receiver(comms_info, timeout, nrf):
     nrf.channel = CHANNEL2
     #nrf.auto_ack=True
     nrf.ack = False
+    #nrf.auto_ack=False
+    nrf.ack=False
+    timeout = 3
     nrf.listen = True
     stop_wait = False
-    #nrf.load_ack(b"0",1)
     received_data = bytearray()
     start = time.monotonic()
     while (time.monotonic() - start) < timeout:
@@ -135,9 +181,18 @@ def receiver(comms_info, timeout, nrf):
     if len(valid_data) == 0 :
         print("Empty")
         return False
-    with open(FOLDERPATH+FILE_NAME, "wb") as file:
+    with open(FILE_NAME, "wb") as file:
         file.write(valid_data)
         print(f"Archivo reconstruido y guardado. Tamaño total: {len(received_data)} bytes.")
+    # Buscar los archivos .txt en el directorio de trabajo
+    txt_files = [f for f in os.listdir('.') if f.endswith('.txt')]
+    try:
+        for txt_file in txt_files:
+            shutil.copy(txt_file, USB_PATH)
+            print(f"Received message '{txt_file}' also stored in {USB_PATH}'")
+            #blink_success_leds(10, USB_LED, USB_LED) 
+            #reset_leds()
+    except Exception as e:
+        print(f"Failed to save the message in '/media/usb'. Error: {e}")
     #nrf.auto_ack=False
     return True
-
