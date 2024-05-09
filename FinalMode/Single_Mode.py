@@ -17,7 +17,7 @@ logging.basicConfig(filename='slave.log', level=logging.DEBUG, format='%(asctime
 # invalid default values for scoping
 SPI_BUS, CSN_PIN, CE_PIN = (None, None, None)
 
-try:  
+try:
     import spidev
 
     SPI_BUS = spidev.SpiDev()  # for a faster interface on linux
@@ -113,7 +113,7 @@ def blink_failure_leds(N):
         GPIO.output(TRANSMITTER_LED, GPIO.LOW)
         GPIO.output(RECEIVER_LED, GPIO.LOW)
         time.sleep(0.5)
-        
+
 def blink_usb_LED():
     for i in range(50):
         GPIO.output(USB_LED, GPIO.HIGH)
@@ -121,7 +121,7 @@ def blink_usb_LED():
         GPIO.output(USB_LED, GPIO.LOW)
         time.sleep(0.05)
 
-#--- SINGLE MODE FUNCTIONS---#  
+#--- SINGLE MODE FUNCTIONS---#
 def master(filelist):
     """Function for Master role"""
     decompressed_successfully = False
@@ -131,22 +131,22 @@ def master(filelist):
         GPIO.output(TRANSMITTER_LED, GPIO.HIGH)
         nrf.listen = True
         nrf.listen = False
-        
+
         # Emtpy the FIFOs
-        for i in range(10): 
+        for i in range(10):
             nrf.send(b'hola')
             nrf.read()
-        
+
         filepath = filelist[0] # Parse the first file in the directory
         # Compress the file using 7z
         os.system(f"yes | 7z a {filepath}.7z {filepath}")
         filepath = filepath + ".7z"
-        
+
         # This line stores the filename in the message
         message = open(filepath, 'rb').read() + b'separaciofitxer' + bytes(filepath.split('/')[-1], 'utf-8')
-        
+
         chunks = [message[i:i + 32] for i in range(0, len(message), 32)]
-        
+
         result = nrf.send(b'Ready')
         # print('fifo state TX1:',fifo_state_tx)
         while not result:
@@ -154,7 +154,7 @@ def master(filelist):
             result = nrf.send(b'Ready')
 
         print("Receiver is ready to receive.")
-        
+
         for chunk in chunks:
             result = nrf.send(chunk)  # Enviar el chunk
             # received_payload = nrf.read()  # Leer el payload recibido
@@ -170,7 +170,7 @@ def master(filelist):
 
             # Show percentage of message sent
             print(f"Percentage of message sent: {round((chunks.index(chunk)+1)/len(chunks)*100, 2)}%")
-        
+
         print("Message transmission complete.")
         ack_payload = b'FINALTRANSMISSIO'  # Mensaje de finalización
         nrf.listen = False  # Dejar de escuchar para poder enviar
@@ -180,7 +180,7 @@ def master(filelist):
             time.sleep(0.5)
         print("Last message sent successfully.")
         GPIO.output(CONNECTION_LED, GPIO.LOW)
-            
+
         # Listen for a new file request (COMPRESSION_CONFIRMED)
         veredict = False
         while not veredict:
@@ -208,7 +208,7 @@ def master(filelist):
 def slave(timeout=1000):
     """"Function for slave role"""
     output = 1
-    while output:    
+    while output:
         logging.info("Slave function started.")
         nrf.listen = True  # put radio into RX mode and power up
         nrf.flush_tx()
@@ -221,7 +221,7 @@ def slave(timeout=1000):
         received_payload = nrf.read()  # Leer el mensaje entrante
         while received_payload != b'Ready':
             received_payload = nrf.read()
-            
+
         logging.info("Waiting for incoming message...")
         print("Waiting for incoming message...")
         message_completed = False
@@ -240,7 +240,7 @@ def slave(timeout=1000):
                     GPIO.output(CONNECTION_LED, GPIO.HIGH)
 
                 start = time.monotonic()  # Restablecer el temporizador
-                
+
         # Concatenar y procesar el mensaje completo recibido, si es necesario
         complete_message = b''.join(message)
         print(f"Complete message received: {complete_message}")
@@ -260,7 +260,7 @@ def slave(timeout=1000):
             print("2")
             filename_rx = "MTP-S24-NM-RX.txt.7z"
 
-        with open(filename_rx, 'wb') as file:
+        with open(filename, 'wb') as file:
             file.write(complete_message)
         # Extract the 7z file
         output = os.system(f"yes | 7z x {filename} -o.")
@@ -268,7 +268,7 @@ def slave(timeout=1000):
         if output == 0:
             print("File decompressed successfully, informing the transmitter")
             logging.info("File decompressed successfully, informing the transmitter")
-            
+
             nrf.listen = False  # put radio in TX mode and power up
             sent_successfully = nrf.send(COMPRESSION_CONFIRMED)
             print("Sent successfully:", sent_successfully)
@@ -277,7 +277,7 @@ def slave(timeout=1000):
                 print("Error sending the confirmation message, retrying...")
                 sent_successfully = nrf.send(COMPRESSION_CONFIRMED)
                 time.sleep(0.1)
-                
+
             blink_success_leds(10, CONNECTION_LED, NM_LED)
             reset_leds()
         else:
@@ -303,10 +303,10 @@ def slave(timeout=1000):
             print(f"Deleted file '{file_name}' from USB directory.")
     except Exception as e:
         print(f"Failed to delete files from USB directory. Error: {e}")
-    
+
     # Copy the extracted .txt file to the USB directory
     try:
-        filename_txt = filename.split(".txt")[0] + ".txt"           
+        filename_txt = filename.split(".txt")[0] + ".txt"
         print(f"Copying the message '{filename_txt}' to '/media/usb/'")
         shutil.copy2(filename_txt, "/media/usb/")
         print("Done!")
@@ -315,17 +315,17 @@ def slave(timeout=1000):
 
     except Exception as e:
         print(f"Failed to save the message in '/media/usb'. Error: {e}")
-    
 
 
-def set_role(): 
+
+def set_role():
     """Set the role using GPIO switches."""
     # Switch 2 Tx or Rx
     switch_txrx_state = GPIO.input(TXRX_SWITCH)  # Read state of GPIO pin 2
     # Swtich 3 NM or not
     switch_nm_state = GPIO.input(NM_SWITCH)  # Read state of GPIO pin 3
     switch_start_state = GPIO.input(START_SWITCH)
-    
+
     if switch_nm_state:  # If GPIO pin 3 is on
         print("Network mode selected.")
         print("Switch NM state:", switch_nm_state)
@@ -352,7 +352,7 @@ def set_role():
             return True
         if len(filelist) == 0:
             print(f"No files in: {path}")
-            return True        
+            return True
         master(filelist)
         reset_leds()
         GPIO.output(USB_LED, GPIO.LOW)
@@ -360,7 +360,7 @@ def set_role():
     else:  # If neither GPIO pin 2 nor GPIO pin 3 is on
         GPIO.output(NM_LED, GPIO.LOW)
         print("Receiver role selected.")
-        print("Switch NM state:", switch_nm_state) 
+        print("Switch NM state:", switch_nm_state)
         print("Switch TXRX state:", switch_txrx_state)
         # set TX address of RX node into the TX pipe
         nrf.open_tx_pipe(address[1])  # always uses pipe 1
@@ -384,13 +384,13 @@ if __name__ == "__main__":
         time.sleep(1)
     print("USB unit connected")
     GPIO.output(USB_LED, GPIO.HIGH)
-    print("Waiting for start switch...") 
+    print("Waiting for start switch...")
     start = False
     start_switch = GPIO.input(START_SWITCH)
-    print("Switch start state:", start_switch) 
+    print("Switch start state:", start_switch)
     while not start:
-        print("Switch start state:", start_switch) 
-        if start_switch: 
+        print("Switch start state:", start_switch)
+        if start_switch:
             start = True
         time.sleep(0.1)
         start_switch = GPIO.input(START_SWITCH)
