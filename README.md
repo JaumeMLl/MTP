@@ -93,8 +93,12 @@ The Raspberry Pi will reboot and the interface will be enabled.
 ## Library imports
 
 `pip install board` - library needen for CircuitPython_nRF24L01
-
 `pip install Adafruit-Blinka` - library needed for CircuitPython_nRF24L01. Resolves No module named 'digitalio'
+
+If any of the imports is not borking try with sudo
+If still not working use --break-system-packages at the end of pip.
+This will install packages in your local user directory, ~/.local/lib/python3.11.
+'pip install xyz --break-system-packages'
 
 ## USB
 ### Configure USB
