@@ -209,10 +209,10 @@ def receiver(comms_info, timeout, nrf):
 # Initialize the leds
 GPIO.setmode(GPIO.BCM)
 
-GPIO.setup(TRANSMITTER_LED, GPIO.OUT)
-GPIO.setup(RECEIVER_LED, GPIO.OUT)
-GPIO.setup(CONNECTION_LED, GPIO.OUT)
-GPIO.setup(NM_LED, GPIO.OUT)
+GPIO.setup(FILE_POSSESION_LED, GPIO.OUT)
+GPIO.setup(FILE_REQUEST_LED, GPIO.OUT)
+GPIO.setup(REQUEST_ACC_LED, GPIO.OUT)
+GPIO.setup(TRANSMIT_ACC_LED, GPIO.OUT)
 GPIO.setup(USB_LED, GPIO.OUT)
 GPIO.setup(NM_SWITCH, GPIO.IN)
 GPIO.setup(TXRX_SWITCH, GPIO.IN)
@@ -231,8 +231,8 @@ def wait_for_usb():
 
 def reset_leds():
     """Turn off all LEDs."""
-    GPIO.output(TRANSMITTER_LED, GPIO.LOW)
-    GPIO.output(RECEIVER_LED, GPIO.LOW)
-    GPIO.output(CONNECTION_LED, GPIO.LOW)
-    GPIO.output(NM_LED, GPIO.LOW)
+    GPIO.output(FILE_REQUEST_LED, GPIO.LOW)
+    GPIO.output(REQUEST_ACC_LED, GPIO.LOW)
+    GPIO.output(TRANSMIT_ACC_LED, GPIO.LOW)
+    GPIO.output(FILE_POSSESION_LED, GPIO.LOW)
     GPIO.output(USB_LED, GPIO.LOW)

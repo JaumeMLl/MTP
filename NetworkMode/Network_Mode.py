@@ -295,17 +295,20 @@ class StateMachine:
         Checks if a file exists and transitions accordingly.
         """
         reset_leds()
+        print("Waiting for USB drive...")
         wait_for_usb()
         if checkFileExists():
             ledOn()
             comms_info.listening_pipe_address = BROADCAST_ID
             comms_info.destination_pipe_address = BROADCAST_ID
             set_pipes(comms_info, nrf)
+            GPIO.output(FILE_POSSESION_LED, GPIO.HIGH)
             self.state = "Packet Possession State"
         else:
             comms_info.listening_pipe_address = MY_PIPE_ID
             comms_info.destination_pipe_address = BROADCAST_ID
             set_pipes(comms_info, nrf)
+            GPIO.output(FILE_REQUEST_LED, GPIO.HIGH)
             self.state = "Send Request State"
 
     def packet_possession_state(self):
@@ -316,6 +319,8 @@ class StateMachine:
             comms_info.listening_pipe_address = MY_PIPE_ID
             # Se define la destination pipe en la función de any Supplicant
             set_pipes(comms_info, nrf)
+            GPIO.output(FILE_REQUEST_LED, GPIO.HIGH)
+            GPIO.output(REQUEST_ACC_LED, GPIO.HIGH)
             self.state = "Request Accepted State"
         else:
             self.state = "Packet Possession State"
@@ -328,17 +333,22 @@ class StateMachine:
             comms_info.listening_pipe_address = BROADCAST_ID
             comms_info.destination_pipe_address = BROADCAST_ID
             set_pipes(comms_info, nrf)
+            GPIO.output(FILE_REQUEST_LED, GPIO.LOW)
+            GPIO.output(REQUEST_ACC_LED, GPIO.LOW)
             self.state = "Packet Possession State"
         else:
             if anyTransmitAcc():
                 # Las pipes ya estan bien definidas
                 comms_info.channel = CHANNEL2
                 nrf.channel = CHANNEL2
+                GPIO.output(TRANSMIT_ACC_LED, GPIO.HIGH)
                 self.state = "Packet Transmission State"
             else:
                 comms_info.listening_pipe_address = BROADCAST_ID
                 comms_info.destination_pipe_address = BROADCAST_ID
                 set_pipes(comms_info, nrf)
+                GPIO.output(FILE_REQUEST_LED, GPIO.LOW)
+                GPIO.output(REQUEST_ACC_LED, GPIO.LOW)
                 self.state = "Packet Possession State"
 
     def packet_transmission_state(self):
@@ -365,6 +375,9 @@ class StateMachine:
         nrf.open_tx_pipe(BROADCAST_ID)
         # set RX address of TX node into an RX pipe
         nrf.open_rx_pipe(1, BROADCAST_ID)
+        GPIO.output(FILE_REQUEST_LED, GPIO.LOW)
+        GPIO.output(REQUEST_ACC_LED, GPIO.LOW)
+        GPIO.output(TRANSMIT_ACC_LED, GPIO.LOW)
         self.state = "Packet Possession State"
 
     def send_request_state(self):
@@ -379,6 +392,7 @@ class StateMachine:
             comms_info.listening_pipe_address = MY_PIPE_ID
             # Se define la destination pipe en la función de any Supplicant
             set_pipes(comms_info, nrf)
+            GPIO.output(REQUEST_ACC_LED, GPIO.HIGH)
             self.state = "Transmit Confirmation State"
         else:
             comms_info.listening_pipe_address = MY_PIPE_ID
@@ -393,6 +407,7 @@ class StateMachine:
         sendTransmitionAccepted()
         nrf.ack = True
         comms_info.channel = CHANNEL2
+        GPIO.output(TRANSMIT_ACC_LED, GPIO.HIGH)
         self.state = "Packet Reception State"
 
     def packet_reception_state(self):
@@ -414,11 +429,14 @@ class StateMachine:
             comms_info.destination_pipe_address = BROADCAST_ID
             set_pipes(comms_info, nrf)
             print(nrf.channel)
+            GPIO.output(FILE_POSSESION_LED, GPIO.HIGH)
             self.state = "Packet Possession State"
         else:
             comms_info.listening_pipe_address = MY_PIPE_ID
             comms_info.destination_pipe_address = BROADCAST_ID
             set_pipes(comms_info, nrf)
+            GPIO.output(REQUEST_ACC_LED, GPIO.LOW)
+            GPIO.output(TRANSMIT_ACC_LED, GPIO.LOW)
             self.state = "Send Request State"
         nrf.open_tx_pipe(BROADCAST_ID)
         # set RX address of TX node into an RX pipe
