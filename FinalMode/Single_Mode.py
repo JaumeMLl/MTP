@@ -1,11 +1,9 @@
 import time
-import struct
 import board
 from digitalio import DigitalInOut
 import os
 import subprocess
 import RPi.GPIO as GPIO
-import threading
 import numpy as np
 import shutil
 import logging
@@ -251,23 +249,18 @@ def slave(timeout=1000):
         filename = complete_message.split(b'separaciofitxer')[-1].decode('utf-8')
         long_desc = len(filename) + len(b'separaciofitxer')
         complete_message = complete_message[:-long_desc]
-        '''
-        #DIRECTORIOS RECEIVER
-        dir = "/home/pi/MTP/FinalMode"
-        #dir = /home/pi/SM
-
+        print('FILENAME:', filename)
         if filename == "MTP-S24-MRM-C-TX.txt.7z":
+            print("1")
             filename_rx = "MTP-S24-MRM-C-RX.txt.7z"
         elif filename == "MTP-S24-SRI-TX.txt.7z":
+            print("3")
             filename_rx = "MTP-S24-SRI-RX.txt.7z"
         elif filename == "MTP-S24-NM-TX.txt.7z":
+            print("2")
             filename_rx = "MTP-S24-NM-RX.txt.7z"
-        # Ruta completa del archivo actual
-        ra = os.path.join(dir, filename)
-        rn = os.path.join(dir, filename_rx)
-        os.rename(ra, rn)
-        '''
-        with open(filename, 'wb') as file:
+
+        with open(filename_rx, 'wb') as file:
             file.write(complete_message)
         # Extract the 7z file
         output = os.system(f"yes | 7z x {filename} -o.")
