@@ -83,34 +83,25 @@ def master(filepath, count=5):
         message = file.read().encode()
 >>>>>>> 0ee453c5ed5b5a67ecded36ce51ef372dba4969e
 
-    while True:
-        chunks = [message[i:i + 32] for i in range(0, len(message), 32)]
-        
-        for chunk in chunks:
-            result = nrf.send(chunk)  # Enviar el chunk
-            # received_payload = nrf.read()  # Leer el payload recibido
-            if result:  # Si se recibe el ACK esperado
-                print("ACK received. Sending next chunk.")
-            else:
-                while not result:
-                    print("No ACK received. Retrying...")
-                    result = nrf.send(chunk)
+    chunks = [message[i:i + 32] for i in range(0, len(message), 32)]
     
-            # Show percentage of message sent
-            print(f"Percentage of message sent: {round((chunks.index(chunk)+1)/len(chunks)*100, 2)}%")
-        
-        print("Message transmission complete.")
-        ack_payload = b'FINALTRANSMISSIO'  # Mensaje de finalización
-        nrf.listen = False  # Dejar de escuchar para poder enviar
-        sent_successfully = nrf.send(ack_payload)  # Enviar el mensaje de confirmación
-        if sent_successfully:
-            print("Confirmation message sent successfully.")
+    for chunk in chunks:
+        result = nrf.send(chunk)  # Enviar el chunk
+        # received_payload = nrf.read()  # Leer el payload recibido
+        if result:  # Si se recibe el ACK esperado
+            print("ACK received. Sending next chunk.")
         else:
-    #aqui es el unico sitio donde se podria hacer retransmi sin liarla demasiado
-            sent_successfully = nrf.send(ack_payload)
-            while not sent_successfully:
-                sent_successfully = nrf.send(ack_payload)
-            print("Confirmation message sent successfully.")
+            while not result:
+                print("No ACK received. Retrying...")
+                result = nrf.send(chunk)
+
+        # Show percentage of message sent
+        print(f"Percentage of message sent: {round((chunks.index(chunk)+1)/len(chunks)*100, 2)}%")
+    
+    print("Message transmission complete.")
+    ack_payload = b'FINALTRANSMISSIO'  # Mensaje de finalización
+    nrf.listen = False  # Dejar de escuchar para poder enviar
+    nrf.send(ack_payload)  # Enviar el mensaje de confirmación
 
 def slave(timeout=6):
     nrf.listen = True  # put radio into RX mode and power up
