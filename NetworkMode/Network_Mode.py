@@ -11,11 +11,13 @@ import subprocess
 
 from CommsMethods import *
 from Constants_Network_Mode import *
+from FinalMode import config
 
 from circuitpython_nrf24l01.rf24 import RF24
 
 #---- CONFIG ----#
 
+'''
 # invalid default values for scoping
 SPI_BUS, CSN_PIN, CE_PIN = (None, None, None)
 
@@ -41,6 +43,9 @@ nrf = RF24(SPI_BUS, CSN_PIN, CE_PIN)
 #                 0 = bus 0, CE0  # SPI bus 0 is enabled by default
 #                10 = bus 1, CE0  # enable SPI bus 2 prior to running this
 #                21 = bus 2, CE1  # enable SPI bus 1 prior to running this
+'''
+
+nrf = config.nrf
 
 # Change the Power Amplifier level
 nrf.pa_level = -18
