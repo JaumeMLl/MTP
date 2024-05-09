@@ -381,7 +381,7 @@ if __name__ == "__main__":
         df = subprocess.check_output("lsusb")
         df = df.split(b'\n')
         num_devices = len(df)-1
-        time.sleep(0.1)
+        time.sleep(1)
     print("USB unit connected")
     GPIO.output(USB_LED, GPIO.HIGH)
     print("Waiting for start switch...") 
@@ -389,7 +389,7 @@ if __name__ == "__main__":
     start_switch = GPIO.input(START_SWITCH)
     print("Switch start state:", start_switch) 
     while not start:
-        print("fgvfSwitch start state:", start_switch) 
+        print("Switch start state:", start_switch) 
         if start_switch: 
             start = True
         time.sleep(0.1)
