@@ -299,7 +299,17 @@ def slave(timeout=1000):
                 sent_successfully = nrf.send(COMPRESSION_ERROR)
                 time.sleep(0.1)
             print(f"Soliciting file again. Sent: {sent_successfully}")
-            
+
+    usb_directory = "/media/usb"
+    #Delete any existing files in the USB directory
+    try:
+        files_in_usb = os.listdir(usb_directory)
+        for file_name in files_in_usb:
+            file_path = os.path.join(usb_directory, file_name)
+            os.remove(file_path)
+            print(f"Deleted file '{file_name}' from USB directory.")
+    except Exception as e:
+        print(f"Failed to delete files from USB directory. Error: {e}")
     
     # Copy the extracted .txt file to the USB directory
     try:
@@ -386,7 +396,7 @@ if __name__ == "__main__":
     start_switch = GPIO.input(START_SWITCH)
     print("Switch start state:", start_switch) 
     while not start:
-        print("Switch start state:", start_switch) 
+        print("fgvfSwitch start state:", start_switch) 
         if start_switch: 
             start = True
         time.sleep(0.1)
