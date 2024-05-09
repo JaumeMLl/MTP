@@ -294,6 +294,7 @@ class StateMachine:
         """
         Checks if a file exists and transitions accordingly.
         """
+        reset_leds()
         wait_for_usb()
         if checkFileExists():
             ledOn()

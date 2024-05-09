@@ -228,3 +228,11 @@ def wait_for_usb():
         else:
             GPIO.output(USB_LED, GPIO.LOW)
             time.sleep(0.5)
+
+def reset_leds():
+    """Turn off all LEDs."""
+    GPIO.output(TRANSMITTER_LED, GPIO.LOW)
+    GPIO.output(RECEIVER_LED, GPIO.LOW)
+    GPIO.output(CONNECTION_LED, GPIO.LOW)
+    GPIO.output(NM_LED, GPIO.LOW)
+    GPIO.output(USB_LED, GPIO.LOW)
