@@ -8,6 +8,12 @@ import numpy as np
 import shutil
 import logging
 
+# some_file.py
+import sys
+# caution: path[0] is reserved for script path (or '' in REPL)
+sys.path.append("/home/pi/MTP/")
+print(sys.path)
+
 from circuitpython_nrf24l01.rf24 import RF24
 
 #--- CONFIG ---#
@@ -27,6 +33,8 @@ except ImportError:  # on CircuitPython only
     SPI_BUS = board.SPI()  # init spi bus object
     CE_PIN = DigitalInOut(board.D4)
     CSN_PIN = DigitalInOut(board.D5)
+
+nrf = RF24(SPI_BUS, CSN_PIN, CE_PIN)
 
 # GPIO Pins for Leds and Switches Initialized
 GPIO.setmode(GPIO.BCM)
@@ -52,7 +60,7 @@ COMPRESSION_CONFIRMED = b"CompressionConfirmed"
 COMPRESSION_ERROR = b"CompressionError"
 
 # initialize the nRF24L01 on the spi bus object
-nrf = RF24(SPI_BUS, CSN_PIN, CE_PIN)
+#nrf = RF24(SPI_BUS, CSN_PIN, CE_PIN)
 # On Linux, csn value is a bit coded
 #                 0 = bus 0, CE0  # SPI bus 0 is enabled by default
 #                10 = bus 1, CE0  # enable SPI bus 2 prior to running this

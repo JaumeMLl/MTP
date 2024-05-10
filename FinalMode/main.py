@@ -1,3 +1,9 @@
+# some_file.py
+import sys
+# caution: path[0] is reserved for script path (or '' in REPL)
+sys.path.append("/home/pi/MTP/")
+print(sys.path)
+
 import time
 import board
 from digitalio import DigitalInOut
@@ -10,9 +16,9 @@ import logging
 
 from circuitpython_nrf24l01.rf24 import RF24
 
-from NetworkMode.CommsMethods import *
-from NetworkMode.Constants_Network_Mode import *
-from NetworkMode.Network_Mode import *
+from NetworkMode import *
+#from NetworkMode import Constants_Network_Mode
+#from NetworkMode import Network_Mode
 from Single_Mode.Single_Mode import *
 from config import *
 
