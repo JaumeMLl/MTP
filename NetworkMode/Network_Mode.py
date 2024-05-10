@@ -47,8 +47,6 @@ nrf = RF24(SPI_BUS, CSN_PIN, CE_PIN)
 #                21 = bus 2, CE1  # enable SPI bus 1 prior to running this
 '''
 
-nrf = config.nrf
-
 # Change the Power Amplifier level
 nrf.pa_level = -18
 ## to enable the custom ACK payload feature

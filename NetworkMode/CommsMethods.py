@@ -5,7 +5,7 @@ import shutil
 import numpy as np
 import subprocess
 
-from Constants_Network_Mode import *
+from .Constants_Network_Mode import *
 
 def set_pipes(comms_info, nrf):
     nrf.open_rx_pipe(1, comms_info.listening_pipe_address)
