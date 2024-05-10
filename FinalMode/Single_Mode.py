@@ -157,10 +157,6 @@ def master(filelist):
                 elif received_payload == COMPRESSION_ERROR: # If the receiver failed to decompress the file, sent it again.
                     logging.info("The receiver could not decompress the file, retrying...")
                     print("The receiver could not decompress the file, retrying...")
-                    if counter == 3:
-                        nrf.channel == A
-                        counter = 0
-                        print("Channel changed to:", nrf.channel)
                     veredict = True
 
 def slave(timeout=1000):
@@ -251,7 +247,7 @@ def slave(timeout=1000):
                 time.sleep(0.1)
             print(f"Soliciting file again. Sent: {sent_successfully}")
 
-    usb_directory = "/media/usb"
+    usb_directory = "/media/usb0"
     #Delete any existing files in the USB directory
     try:
         files_in_usb = os.listdir(usb_directory)
@@ -265,12 +261,12 @@ def slave(timeout=1000):
     # Copy the extracted .txt file to the USB directory
     try:
         filename_txt = filename.split(".txt")[0] + ".txt"           
-        print(f"Copying the message '{filename_txt}' to '/media/usb/'")
-        shutil.copy2(filename_txt, "/media/usb/")
+        print(f"Copying the message '{filename_txt}' to '/media/usb0/'")
+        shutil.copy2(filename_txt, "/media/usb0/")
         print("Done!")
         blink_usb_LED()
         GPIO.output(USB_LED, GPIO.HIGH)
 
     except Exception as e:
-        print(f"Failed to save the message in '/media/usb'. Error: {e}")
+        print(f"Failed to save the message in '/media/usb0'. Error: {e}")
     
