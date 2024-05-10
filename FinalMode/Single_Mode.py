@@ -11,6 +11,7 @@ import logging
 from circuitpython_nrf24l01.rf24 import RF24
 
 from config import *
+
 logging.basicConfig(filename='slave.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 #--- CONFIG ---#
