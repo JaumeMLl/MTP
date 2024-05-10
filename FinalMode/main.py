@@ -45,7 +45,7 @@ def set_role():
         nrf.open_tx_pipe(address[0])  # always uses pipe 0
         # set RX address of TX node into an RX pipe
         nrf.open_rx_pipe(1, address[1])  # using pipe 1
-        path = '/media/usb'  # Ruta completa al archivo en el directorio /mnt/usbdrive
+        path = '/media/usb0'  # Ruta completa al archivo en el directorio /mnt/usbdrive
         filelist = np.array([os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]) # Get the list of files in the directory
         filelist = filelist[np.where([x.endswith(".txt") and not x.startswith(".") for x in filelist])[0]] # Get the elements that end with ".txt" and does not start with "."
         print("filelist",filelist)
