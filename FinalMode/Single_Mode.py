@@ -260,7 +260,7 @@ def slave(timeout=1000):
     
     # Copy the extracted .txt file to the USB directory
     try:
-        filename_txt = filename.split(".txt")[0] + ".txt"           
+        filename_txt = filename_rx.split(".txt")[0] + ".txt"           
         print(f"Copying the message '{filename_txt}' to '/media/usb0/'")
         shutil.copy2(filename_txt, "/media/usb0/")
         print("Done!")
