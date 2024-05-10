@@ -1,3 +1,5 @@
+import sys
+sys.path.append("/home/pi/MTP")
 import time
 import board
 from digitalio import DigitalInOut
@@ -10,7 +12,7 @@ import logging
 
 from circuitpython_nrf24l01.rf24 import RF24
 
-from FinalMode import config
+from FinalMode.config import *
 
 logging.basicConfig(filename='slave.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -24,7 +26,6 @@ B = 125
 C = 75
 '''
 
-nrf = config.nrf
 # Change the Power Amplifier level
 nrf.pa_level = 0 # 0, -12, -18
 ## to enable the custom ACK payload feature

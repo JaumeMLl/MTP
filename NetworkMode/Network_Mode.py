@@ -1,3 +1,5 @@
+import sys
+sys.path.append("/home/pi/MTP")
 from asyncio import sleep
 import random
 import time
@@ -11,7 +13,7 @@ import subprocess
 
 from CommsMethods import *
 from Constants_Network_Mode import *
-from FinalMode import config
+from FinalMode.config import *
 
 from circuitpython_nrf24l01.rf24 import RF24
 
