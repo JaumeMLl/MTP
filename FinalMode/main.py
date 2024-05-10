@@ -39,7 +39,7 @@ def set_role():
         GPIO.output(NM_LED, GPIO.HIGH)
         while True:
             # Ejecuta el script externo
-            subprocess.run(['python3', 'nm.py'])
+            subprocess.run(['python3', '/home/pi/MTP/NetworkMode/nm.py'])
             print("FILE ENDED, REPEATING....")
             # Pausa entre ejecuciones, si es necesario
             time.sleep(1)  # Pausa de 1 segundo
