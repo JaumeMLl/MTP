@@ -11,8 +11,8 @@ import board
 from digitalio import DigitalInOut
 import subprocess
 
-from CommsMethods import *
-from Constants_Network_Mode import *
+from .CommsMethods import *
+from .Constants_Network_Mode import *
 from FinalMode.config import *
 
 from circuitpython_nrf24l01.rf24 import RF24
