@@ -8,6 +8,8 @@ import struct
 import board
 from digitalio import DigitalInOut
 import subprocess
+import logging
+
 
 from CommsMethods import *
 from Constants_Network_Mode import *
@@ -44,6 +46,7 @@ nrf = RF24(SPI_BUS, CSN_PIN, CE_PIN)
 #                10 = bus 1, CE0  # enable SPI bus 2 prior to running this
 #                21 = bus 2, CE1  # enable SPI bus 1 prior to running this
 '''
+logging.basicConfig(filename='slave.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Change the Power Amplifier level
 nrf.pa_level = -18
@@ -97,12 +100,12 @@ def checkFileExists():
     filelist = np.array([os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]) # Get the list of files in the directory
     filelist = filelist[np.where([x.endswith(".txt") and not x.startswith(".") for x in filelist])[0]] # Get the elements that end with ".txt" and does not start with "."
     if not os.path.exists(path):
-        print(f"Path not found: {path}")
+        logging.info(f"Path not found: {path}")
         return False
     if len(filelist) == 0:
-        print(f"No files in: {path}")
+        logging.info(f"No files in: {path}")
         return False
-    print("File Found")
+    logging.info("File Found")
     return True
 
 def ledOn():
@@ -110,7 +113,7 @@ def ledOn():
     Simulates turning on an LED (for demonstration purposes).
     """
     # TODO implement this function
-    print("Turning LED on...")
+    logging.info("Turning LED on...")
 
 def anySupplicant():
     """
@@ -138,7 +141,7 @@ def sendRequestAcc():
     """
     # Preparar y enviar un mensaje de confirmación de vuelta al transmisor
     time.sleep(random.randint(0, REQUEST_ACC_RANDOM_WAIT))  # Wait a random amount of seconds
-    print("Sending request accepted message...")
+    logging.info("Sending request accepted message...")
     return send_message(comms_info.destination_pipe_address, REQUEST_ACC_MSG, nrf)
 
 def anyTransmitAcc():
@@ -165,8 +168,8 @@ def needToBackOff():
     start = time.monotonic()
     for count in range(0):
         if nrf.available():
-            print(nrf.read())
-            print("Need To Back Off")
+            logging.info(nrf.read())
+            logging.info("Need To Back Off")
             time.sleep(0.1)  # Wait for a short time before checking again
         else:
             return False
@@ -189,12 +192,12 @@ def packageTransmission():
     path = FOLDER_PATH  # Ruta completa al archivo en el directorio /mnt/usbdrive
     filelist = np.array([os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]) # Get the list of files in the directory
     filelist = filelist[np.where([x.endswith(".txt") and not x.startswith(".") for x in filelist])[0]] # Get the elements that end with ".txt" and does not start with "."
-    print("filelist",filelist)
+    logging.info("filelist",filelist)
     if not os.path.exists(path):
-        print(f"Path not found: {path}")
+        logging.info(f"Path not found: {path}")
         return True
     if len(filelist) == 0:
-        print(f"No files in: {path}")
+        logging.info(f"No files in: {path}")
         return True
     
     data = transmitter(comms_info, filelist, TRANSMIT_ATTEMPTS, nrf)
@@ -207,13 +210,13 @@ def sendFileRequest():
     Parameters:
     - comms_info: Communication information object.
     """
-    print("Sending file request...")
+    logging.info("Sending file request...")
     r = send_message(comms_info.destination_pipe_address, FILE_REQUEST_MSG, nrf)
     
     if r:
-        print("Message Sent")
+        logging.info("Message Sent")
     else:
-        print("Fail while sending message")
+        logging.info("Fail while sending message")
     return r
 
 def anyCarrier():
@@ -236,13 +239,13 @@ def sendTransmitionAccepted():
     Parameters:
     - comms_info: Communication information object.
     """
-    print("Sending transmission accepted message...")
+    logging.info("Sending transmission accepted message...")
     r = send_message(comms_info.destination_pipe_address, TRANSMIT_ACC_MSG, nrf)
     
     if r:
-        print("Message Sent")
+        logging.info("Message Sent")
     else:
-        print("Fail while sending message")
+        logging.info("Fail while sending message")
     return r
 
 def packageReception():
@@ -273,8 +276,8 @@ class StateMachine:
     def run(self):
         stop = False
         while True and not stop:
-            print(f"\n\n#--------- CURRENT STATE: {self.state} ---------#")
-            print(f"Channel Information: {comms_info}")
+            logging.info(f"\n\n#--------- CURRENT STATE: {self.state} ---------#")
+            logging.info(f"Channel Information: {comms_info}")
             time.sleep(1)
             if self.state == "Check File State":
                 self.check_file_state()
@@ -298,7 +301,7 @@ class StateMachine:
         Checks if a file exists and transitions accordingly.
         """
         reset_leds()
-        print("Waiting for USB drive...")
+        logging.info("Waiting for USB drive...")
         wait_for_usb()
         if checkFileExists():
             comms_info.listening_pipe_address = BROADCAST_ID
@@ -365,7 +368,7 @@ class StateMachine:
             nrf.flush_tx()
             nrf.power = False
             nrf.power = True
-            print("Packet Sent Correctly:", packageTransmittedFlag)
+            logging.info("Packet Sent Correctly:", packageTransmittedFlag)
         
         comms_info.channel = CHANNEL1
         nrf.channel = CHANNEL1
@@ -373,7 +376,7 @@ class StateMachine:
         comms_info.listening_pipe_address = BROADCAST_ID
         comms_info.destination_pipe_address = BROADCAST_ID
         set_pipes(comms_info, nrf)
-        print("CHANNEL IS : ", nrf.channel)
+        logging.info("CHANNEL IS : ", nrf.channel)
         nrf.open_tx_pipe(BROADCAST_ID)
         # set RX address of TX node into an RX pipe
         nrf.open_rx_pipe(1, BROADCAST_ID)
@@ -429,7 +432,7 @@ class StateMachine:
             comms_info.listening_pipe_address = BROADCAST_ID
             comms_info.destination_pipe_address = BROADCAST_ID
             set_pipes(comms_info, nrf)
-            print(nrf.channel)
+            logging.info(nrf.channel)
             GPIO.output(FILE_POSSESION_LED, GPIO.HIGH)
             self.state = "Packet Possession State"
         else:
