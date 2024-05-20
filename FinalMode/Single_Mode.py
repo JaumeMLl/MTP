@@ -20,7 +20,7 @@ logging.basicConfig(filename='slave.log', level=logging.DEBUG, format='%(asctime
 ''' Ho obviarem perquè anem massa liats
 # CHANNELS
 A = 1
-B = 125
+B = 83
 C = 75
 '''
 
@@ -33,7 +33,7 @@ nrf.flush_rx()
 nrf.flush_tx()
 nrf.arc = 15 #Number of retransmits, default is 3. Int. Value: [0, 15]
 # Set channel, from 1 to 125
-nrf.channel = 125
+nrf.channel = 83
 nrf.data_rate = 250 # RF24_250KBPS (250kbps), RF24_1MBPS (1Mbps), RF24_2MBPS (2Mbps)
 
 # addresses needs to be in a buffer protocol object (bytearray)
